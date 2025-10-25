@@ -43,6 +43,7 @@ Instagram: @liquid_aesthetik""",
 Eine genaue Preisliste erhältst du nach einem kostenlosen Beratungsgespräch in der Praxis.""",
 
     "öffnungszeiten": """Unsere Praxis ist Montag bis Freitag von 9:00 bis 18:00 Uhr geöffnet. Termine nach Vereinbarung.""",
+    "Instagram": "Wir heißen @liquid_aesthetik auf Instagram! Schau gerne vorbei für Einblicke in unsere Arbeit und Neuigkeiten."
 }
 
 # 🎯 Schlagwort-Antworten (ebenfalls offline)
@@ -137,3 +138,4 @@ class handler(BaseHTTPRequestHandler):
 
         except Exception as e:
             self._send(500, {"error": str(e)})
+#Test comment
