@@ -112,16 +112,11 @@ class handler(BaseHTTPRequestHandler):
             # 🔎 Zahl (Ziffer oder Wort) erkennen
             zahl_match = re.search(r"\b(\d+)\b", user_message)
             anzahl = None
-            anzahl = None
-zahl_match = re.search(r"\b(\d+)\b", user_message)
-if zahl_match:
-    anzahl = int(zahl_match.group(1))
-else:
-    for word, num in WORD_NUMBERS.items():
-        if re.search(rf"\b{word}\b", user_message):
-            anzahl = num
-            break
-
+            if not zahl_match:
+                for word, num in WORD_NUMBERS.items():
+                    if re.search(rf"\b{word}\b", user_message):
+                        anzahl = num
+                        break
             else:
                 anzahl = int(zahl_match.group(1)) if zahl_match else anzahl
 
