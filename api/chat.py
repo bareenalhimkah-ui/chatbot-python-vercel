@@ -43,7 +43,7 @@ Instagram: @liquid_aesthetik""",
 Eine genaue Preisliste erhältst du nach einem kostenlosen Beratungsgespräch in der Praxis.""",
 
     "öffnungszeiten": """Unsere Praxis ist Montag bis Freitag von 9:00 bis 18:00 Uhr geöffnet. Termine nach Vereinbarung.""",
-    "Instagram": "Wir heißen @liquid_aesthetik auf Instagram! Schau gerne vorbei für Einblicke in unsere Arbeit und Neuigkeiten."
+    "instagram": "Wir heißen @liquid_aesthetik auf Instagram! Schau gerne vorbei für Einblicke in unsere Arbeit und Neuigkeiten."
 }
 
 # 🎯 Schlagwort-Antworten (ebenfalls offline)
@@ -53,6 +53,13 @@ KEYWORD_ANSWERS = {
     "jawline": "Mit Jawline-Contouring wird die Kieferlinie betont und definiert – für ein markantes, harmonisches Gesicht.",
     "lipolyse": "Die Lipolyse reduziert lokale Fettdepots durch Injektionen – ideal für kleine Problemzonen wie Doppelkinn oder Bauch.",
     "augenringe": "Bei Liquid Aesthetik behandeln wir Augenringe mit Hyaluronsäure, um Schatten und Tränensäcke sanft zu mildern.",
+}
+
+# 🔢 Wörter in Zahlen umwandeln (z. B. „fünf“ → 5)
+WORD_NUMBERS = {
+    "eins": 1, "eine": 1, "ein": 1,
+    "zwei": 2, "drei": 3, "vier": 4, "fünf": 5, "sechs": 6,
+    "sieben": 7, "acht": 8, "neun": 9, "zehn": 10
 }
 
 
@@ -83,22 +90,20 @@ class handler(BaseHTTPRequestHandler):
                 self._send(400, {"error": "Feld 'message' ist leer."})
                 return
 
-            # 1️⃣ Feste Antworten prüfen
-            for key, answer in PREDEFINED_ANSWERS.items():
-                if key in user_message:
-                    self._send(200, {"reply": answer})
-                    return
-
-            # 2️⃣ Schlagwortantworten prüfen
-            for key, answer in KEYWORD_ANSWERS.items():
-                if key in user_message:
-                    self._send(200, {"reply": answer})
-                    return
-
-            # 3️⃣ Nutzer nennt eine Zahl (z. B. „Nenne 5 Behandlungen“)
+            # 🔎 Zahl (Ziffer oder Wort) erkennen
             zahl_match = re.search(r"\b(\d+)\b", user_message)
-            if "behandlung" in user_message and zahl_match:
-                anzahl = int(zahl_match.group(1))
+            if not zahl_match:
+                for word, num in WORD_NUMBERS.items():
+                    if re.search(rf"\b{word}\b", user_message):
+                        zahl_match = re.match(r".*", str(num))
+                        anzahl = num
+                        break
+
+            if zahl_match:
+                if not 'anzahl' in locals():
+                    anzahl = int(zahl_match.group(1))
+
+                # Prüfen, ob es um Behandlungen oder andere Listen geht
                 behandlungen = [
                     "Hyaluron",
                     "Jawline",
@@ -109,10 +114,26 @@ class handler(BaseHTTPRequestHandler):
                     "Augenringe",
                     "Nasenkorrektur"
                 ]
-                antwort = f"Hier sind {anzahl} unserer Behandlungen:\n"
-                antwort += "\n".join([f"{i+1}. {b}" for i, b in enumerate(behandlungen[:anzahl])])
-                self._send(200, {"reply": antwort})
-                return
+
+                # Nur dann reagieren, wenn das Thema passt
+                if re.search(r"behandlung|behandlungen|angebot|leistung|preise|optionen|möglichkeiten", user_message):
+                    anzahl = min(anzahl, len(behandlungen))
+                    antwort = f"Hier sind {anzahl} unserer Behandlungen:\n"
+                    antwort += "\n".join([f"{i+1}. {b}" for i, b in enumerate(behandlungen[:anzahl])])
+                    self._send(200, {"reply": antwort})
+                    return
+
+            # 2️⃣ Feste Antworten prüfen
+            for key, answer in PREDEFINED_ANSWERS.items():
+                if key in user_message:
+                    self._send(200, {"reply": answer})
+                    return
+
+            # 3️⃣ Schlagwortantworten prüfen
+            for key, answer in KEYWORD_ANSWERS.items():
+                if key in user_message:
+                    self._send(200, {"reply": answer})
+                    return
 
             # 4️⃣ Wenn nichts passt → KI antwortet
             prompt = f"""
@@ -138,4 +159,4 @@ class handler(BaseHTTPRequestHandler):
 
         except Exception as e:
             self._send(500, {"error": str(e)})
-#Test comment
+# Test comment
