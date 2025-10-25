@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler
-import os, json, re
+import os, json, re, time
+from datetime import datetime
 from openai import OpenAI
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -12,16 +13,33 @@ SYSTEM_PROMPT = (
     "Wenn möglich, klinge einladend und beruhigend – so, als würdest du direkt in der Praxis beraten."
 )
 
-# 📄 Versuch, gespeicherte Website-Daten zu laden
+# 📁 Website-Cache-Einstellungen
+CACHE_FILE = "website_data.txt"
+SCRAPER_SCRIPT = "scrape_site.py"  # Dein Scraper-Skript
+MAX_CACHE_AGE_HOURS = 24  # Nach 24h neu laden
+
+def ensure_website_data():
+    """Stellt sicher, dass die Website-Daten vorhanden und aktuell sind."""
+    if os.path.exists(CACHE_FILE):
+        age_hours = (time.time() - os.path.getmtime(CACHE_FILE)) / 3600
+        if age_hours > MAX_CACHE_AGE_HOURS:
+            print("♻️ Website-Daten älter als 24h – aktualisiere...")
+            os.system(f"python {SCRAPER_SCRIPT}")
+    else:
+        print("🌐 Website-Daten fehlen – lade neu herunter...")
+        os.system(f"python {SCRAPER_SCRIPT}")
+
+# 🧭 Website-Text laden oder aktualisieren
+ensure_website_data()
 try:
-    with open("website_data.txt", "r", encoding="utf-8") as f:
-        WEBSITE_TEXT = f.read()[:4000]
+    with open(CACHE_FILE, "r", encoding="utf-8") as f:
+        WEBSITE_TEXT = f.read()[:16000]  # GPT-4o kann locker 16k+ Tokens verarbeiten
         print("✅ Website-Daten geladen:", len(WEBSITE_TEXT), "Zeichen")
 except Exception as e:
     WEBSITE_TEXT = "Fehler beim Laden der gespeicherten Website."
     print("❌ Website-Daten konnten nicht geladen werden:", e)
 
-# 📚 Vordefinierte Antworten (kostenfrei)
+# 📚 Vordefinierte Antworten
 PREDEFINED_ANSWERS = {
     "behandlungen": """Bei Liquid Aesthetik bieten wir eine Vielzahl von Behandlungen an, die darauf abzielen, ein natürlich junges Aussehen zu fördern. Zu unseren Hauptbehandlungen gehören:
 1. Hyaluron
@@ -43,10 +61,11 @@ Instagram: @liquid_aesthetik""",
 Eine genaue Preisliste erhältst du nach einem kostenlosen Beratungsgespräch in der Praxis.""",
 
     "öffnungszeiten": """Unsere Praxis ist Montag bis Freitag von 9:00 bis 18:00 Uhr geöffnet. Termine nach Vereinbarung.""",
+
     "instagram": "Wir heißen @liquid_aesthetik auf Instagram! Schau gerne vorbei für Einblicke in unsere Arbeit und Neuigkeiten."
 }
 
-# 🎯 Schlagwort-Antworten (ebenfalls offline)
+# 🎯 Schlagwort-Antworten
 KEYWORD_ANSWERS = {
     "hyaluron": "Unsere Hyaluronbehandlung hilft, Volumen und Frische wiederherzustellen. Sie eignet sich besonders für Lippen, Wangen und Falten.",
     "fadenlifting": "Das Fadenlifting ist eine minimal-invasive Methode, um die Haut zu straffen – ohne OP, mit sofort sichtbarem Effekt.",
@@ -92,18 +111,17 @@ class handler(BaseHTTPRequestHandler):
 
             # 🔎 Zahl (Ziffer oder Wort) erkennen
             zahl_match = re.search(r"\b(\d+)\b", user_message)
+            anzahl = None
             if not zahl_match:
                 for word, num in WORD_NUMBERS.items():
                     if re.search(rf"\b{word}\b", user_message):
-                        zahl_match = re.match(r".*", str(num))
                         anzahl = num
                         break
+            else:
+                anzahl = int(zahl_match.group(1))
 
-            if zahl_match:
-                if not 'anzahl' in locals():
-                    anzahl = int(zahl_match.group(1))
-
-                # Prüfen, ob es um Behandlungen oder andere Listen geht
+            # 📋 Wenn Zahl erkannt + passendes Thema
+            if anzahl is not None and re.search(r"behandlung|angebot|leistung|preise|optionen|möglichkeiten", user_message):
                 behandlungen = [
                     "Hyaluron",
                     "Jawline",
@@ -114,28 +132,25 @@ class handler(BaseHTTPRequestHandler):
                     "Augenringe",
                     "Nasenkorrektur"
                 ]
+                anzahl = min(anzahl, len(behandlungen))
+                antwort = f"Hier sind {anzahl} unserer Behandlungen:\n"
+                antwort += "\n".join([f"{i+1}. {b}" for i, b in enumerate(behandlungen[:anzahl])])
+                self._send(200, {"reply": antwort})
+                return
 
-                # Nur dann reagieren, wenn das Thema passt
-                if re.search(r"behandlung|behandlungen|angebot|leistung|preise|optionen|möglichkeiten", user_message):
-                    anzahl = min(anzahl, len(behandlungen))
-                    antwort = f"Hier sind {anzahl} unserer Behandlungen:\n"
-                    antwort += "\n".join([f"{i+1}. {b}" for i, b in enumerate(behandlungen[:anzahl])])
-                    self._send(200, {"reply": antwort})
-                    return
-
-            # 2️⃣ Feste Antworten prüfen
+            # 📌 Feste Antworten prüfen
             for key, answer in PREDEFINED_ANSWERS.items():
                 if key in user_message:
                     self._send(200, {"reply": answer})
                     return
 
-            # 3️⃣ Schlagwortantworten prüfen
+            # 📌 Schlagwortantworten prüfen
             for key, answer in KEYWORD_ANSWERS.items():
                 if key in user_message:
                     self._send(200, {"reply": answer})
                     return
 
-            # 4️⃣ Wenn nichts passt → KI antwortet
+            # 🤖 Wenn nichts passt → KI antwortet
             prompt = f"""
             Du bist ein Chatbot für Liquid Aesthetik.
             Verwende den folgenden Website-Text, um auf Fragen zu antworten:
@@ -159,4 +174,5 @@ class handler(BaseHTTPRequestHandler):
 
         except Exception as e:
             self._send(500, {"error": str(e)})
+
 # Test comment
