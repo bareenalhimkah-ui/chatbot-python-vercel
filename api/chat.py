@@ -131,7 +131,7 @@ class handler(BaseHTTPRequestHandler):
                 ],
                 temperature=0.3,
             )
-# Test Auto Commit
+
             reply = completion.choices[0].message.content
             self._send(200, {"reply": reply})
 
