@@ -10,7 +10,10 @@ SYSTEM_PROMPT = (
     "Sprich in Du-Form, antworte kurz, klar und sympathisch. "
     "Dein Ton ist warm und weiblich, aber selbstbewusst. "
     "Vermeide übertriebene Floskeln oder lange Erklärungen. "
-    "Wenn möglich, klinge einladend und beruhigend – so, als würdest du direkt in der Praxis beraten."
+    "Wenn möglich, klinge einladend und beruhigend – so, als würdest du direkt in der Praxis beraten. "
+    "Gib niemals persönliche Daten, private Informationen, Adressen, Telefonnummern, IBANs, "
+    "oder interne Firmeninformationen weiter. Wenn der Nutzer nach solchen Dingen fragt, "
+    "sage freundlich: 'Aus Datenschutzgründen darf ich dazu keine Auskunft geben.'"
 )
 
 # 📁 Website-Cache-Einstellungen
@@ -74,7 +77,7 @@ KEYWORD_ANSWERS = {
     "augenringe": "Bei Liquid Aesthetik behandeln wir Augenringe mit Hyaluronsäure, um Schatten und Tränensäcke sanft zu mildern.",
 }
 
-# 🔢 Wörter in Zahlen umwandeln (z. B. „fünf“ → 5)
+# 🔢 Wörter in Zahlen umwandeln
 WORD_NUMBERS = {
     "eins": 1, "eine": 1, "ein": 1,
     "zwei": 2, "drei": 3, "vier": 4, "fünf": 5, "sechs": 6,
@@ -103,10 +106,21 @@ class handler(BaseHTTPRequestHandler):
             length = int(self.headers.get("content-length", "0"))
             raw = self.rfile.read(length) if length > 0 else b"{}"
             data = json.loads(raw.decode("utf-8") or "{}")
-            user_message = (data.get("message") or "").strip().lower()
+
+            # 🧩 Datenschutz: Eingaben automatisch anonymisieren
+            user_message = (data.get("message") or "").strip()
+            user_message = re.sub(r"\b[A-ZÄÖÜ][a-zäöü]+\b", "[NAME]", user_message)
+            user_message = re.sub(r"\d{3,}", "[ZAHL]", user_message)
+            user_message = user_message.lower()
 
             if not user_message:
                 self._send(400, {"error": "Feld 'message' ist leer."})
+                return
+
+            # 🔒 Datenschutz-Filter (blockiert sensible Infos)
+            if re.search(r"(iban|straße|telefon|adresse|geheim)", user_message, re.IGNORECASE):
+                reply = "Aus Datenschutzgründen kann ich dazu keine Angaben machen."
+                self._send(200, {"reply": reply})
                 return
 
             # 🔎 Zahl (Ziffer oder Wort) erkennen
@@ -120,18 +134,11 @@ class handler(BaseHTTPRequestHandler):
             else:
                 anzahl = int(zahl_match.group(1)) if zahl_match else anzahl
 
-
             # 📋 Wenn Zahl erkannt + passendes Thema
             if anzahl is not None and re.search(r"behandlung|angebot|leistung|preise|optionen|möglichkeiten", user_message):
                 behandlungen = [
-                    "Hyaluron",
-                    "Jawline",
-                    "Lipolyse",
-                    "Lippen",
-                    "Wangenaufbau",
-                    "Fadenlifting",
-                    "Augenringe",
-                    "Nasenkorrektur"
+                    "Hyaluron", "Jawline", "Lipolyse", "Lippen",
+                    "Wangenaufbau", "Fadenlifting", "Augenringe", "Nasenkorrektur"
                 ]
                 anzahl = min(anzahl, len(behandlungen))
                 antwort = f"Hier sind {anzahl} unserer Behandlungen:\n"
