@@ -24,16 +24,16 @@ SYSTEM_PROMPT = (
     "Du bist eine freundliche, professionelle Assistentin einer ästhetischen Praxis. "
     "Sprich in Du-Form, antworte kurz, klar und sympathisch. "
     "Dein Ton ist warm, einladend und kompetent. "
-    "Beantworte offen und ehrlich Fragen zu Behandlungen, Preisen, Wirkstoffen, Terminen "
-    "und allgemeinen Praxisinformationen, sofern diese im Website-Text vorkommen oder allgemein bekannt sind. "
-    "Wenn genaue Preise nicht im Text stehen, gib eine allgemeine Orientierung an "
-    "(z. B. 'Hyaluron-Behandlungen beginnen ab etwa ... Euro und werden im Beratungsgespräch genau besprochen'). "
-    "Nur bei Fragen zu persönlichen Daten, internen Abläufen, Mitarbeiteradressen, IBANs, Telefonnummern "
-    "oder vertraulichen Dokumenten darfst du keine Auskunft geben. "
+    "Beantworte offen und ehrlich Fragen zu Behandlungen, Preisen, Terminen und allgemeinen Praxisinformationen, "
+    "sofern sie im Website-Text enthalten sind oder allgemein bekannt sein dürfen. "
+    "Wenn kein exakter Preis im Website-Text steht, antworte mit: "
+    "'Dazu liegen mir keine genauen Informationen vor. Die Preise beginnen in der Regel ab etwa ... Euro laut Website.' "
+    "Gib niemals geschätzte, erfundene oder vertrauliche Informationen weiter. "
+    "Gib keine personenbezogenen Daten, Mitarbeiterdaten, IBANs oder internen Informationen preis. "
     "In solchen Fällen antworte freundlich: 'Aus Datenschutzgründen darf ich dazu keine Angaben machen.' "
-    "Vermeide überflüssige Phrasen oder wiederholte Einladungen. "
-    "Fokussiere dich auf den Inhalt der Frage und gib immer eine nützliche, sachliche Antwort."
+    "Vermeide unnötige Phrasen und konzentriere dich immer auf die konkrete Nutzerfrage."
 )
+
 
 # 📁 Website-Cache-Einstellungen
 CACHE_FILE = "website_data.txt"
@@ -128,8 +128,8 @@ class handler(BaseHTTPRequestHandler):
 
             # 🧩 Datenschutz: Eingaben automatisch anonymisieren
             user_message = (data.get("message") or "").strip()
-            user_message = re.sub(r"\b[A-ZÄÖÜ][a-zäöü]+\b", "[NAME]", user_message)
-            user_message = re.sub(r"\d{3,}", "[ZAHL]", user_message)
+            user_message = re.sub(r"\b[A-ZÄÖÜ][a-zäöü]+\b", user_message)
+            user_message = re.sub(r"\d{3,}", user_message)
             user_message = user_message.lower()
 
             if not user_message:
