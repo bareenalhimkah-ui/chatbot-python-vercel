@@ -12,9 +12,10 @@ SYSTEM_PROMPT = (
     "Dein Ton ist warm, einladend und kompetent. "
     "Beantworte offen und ehrlich Fragen zu Behandlungen, Preisen, Terminen und allgemeinen Praxisinformationen. "
     "Wenn genaue Preise im Website-Text oder in der Preisliste genannt sind, gib sie exakt wieder. "
-    "Wenn keine genauen Preise verfügbar sind, gib eine allgemeine Orientierung ('ab etwa ... Euro laut Preisliste'). "
+    "Wenn du keine Preisinformation findest, sage: 'Ich habe dazu leider keine Preisangabe gefunden.' "
+    "Gib niemals geschätzte oder erfundene Preise aus. "
     "Verwende Zahlen normal und nenne Preise vollständig. "
-    "Gib niemals vertrauliche Daten, IBANs, Mitarbeiteradressen oder interne Informationen preis. "
+    "Gib keine vertraulichen Daten, IBANs, Mitarbeiteradressen oder internen Informationen preis. "
     "In solchen Fällen antworte: 'Aus Datenschutzgründen darf ich dazu keine Angaben machen.' "
     "Fokussiere dich immer auf die konkrete Nutzerfrage und vermeide Floskeln."
 )
@@ -72,7 +73,9 @@ SYNONYMS = {
     "fadenlifting groß": "Fadenlifting COG Fäden 4 (große)",
     "fadenlifting klein": "Mono Fäden 10 Stück",
     "botoxbehandlung": "B. Botox",
-    "botox": "B. Botox"
+    "botox": "B. Botox",
+    "b.botox": "B. Botox",
+    "b botox": "B. Botox"
 }
 
 # 📚 Vordefinierte Antworten
@@ -126,9 +129,30 @@ class handler(BaseHTTPRequestHandler):
                 self._send(200, {"reply": reply})
                 return
 
-            # 💰 Preis-Logik mit Synonym- & Tippfehlererkennung
-            all_keys = list(PREISE.keys()) + list(SYNONYMS.keys())
-            matches = difflib.get_close_matches(user_message, all_keys, n=1, cutoff=0.7)
+            # 💰 Preis-Logik mit Synonym- & Tippfehlererkennung (robust)
+            def normalize(text):
+                """Entfernt Sonderzeichen, Punkte, Leerzeichen und wandelt in Kleinbuchstaben um."""
+                return re.sub(r"[^a-z0-9äöüß]", "", text.lower())
+
+            normalized_message = normalize(user_message)
+
+            # Direkter Treffer mit JSON-Keys
+            for key, price in PREISE.items():
+                if normalize(key) in normalized_message:
+                    reply = f"Die Preise für {key} beginnen {price}."
+                    self._send(200, {"reply": reply})
+                    return
+
+            # Synonyme prüfen
+            for synonym, target in SYNONYMS.items():
+                if normalize(synonym) in normalized_message and target in PREISE:
+                    reply = f"Die Preise für {target} beginnen {PREISE[target]}."
+                    self._send(200, {"reply": reply})
+                    return
+
+            # Tippfehler / Fuzzy Matching
+            all_terms = list(PREISE.keys()) + list(SYNONYMS.keys())
+            matches = difflib.get_close_matches(user_message, all_terms, n=1, cutoff=0.7)
             if matches:
                 match = matches[0]
                 target = SYNONYMS.get(match, match)
@@ -174,3 +198,4 @@ class handler(BaseHTTPRequestHandler):
 
         except Exception as e:
             self._send(500, {"error": str(e)})
+# Test Comment 
