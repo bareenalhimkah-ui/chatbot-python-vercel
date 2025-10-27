@@ -19,7 +19,7 @@ SYSTEM_PROMPT = (
     "Sei warm, ruhig und kompetent. "
     "Wenn Preise aus der Preisliste bekannt sind, gib sie exakt so wieder. "
     "Wenn keine Preisinformation vorhanden ist, sag: 'Dazu liegt mir aktuell kein Preis vor.' "
-    "Gib niemals persönliche Daten, IBANs, Adressen oder interne Informationen preis. "
+    "Gib keine IBANs oder interne Informationen preis. "
     "Bei solchen Anfragen antworte: 'Aus Datenschutzgründen darf ich dazu keine Angaben machen.'"
 )
 
