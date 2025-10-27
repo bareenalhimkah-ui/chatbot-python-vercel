@@ -7,10 +7,8 @@ import difflib
 from datetime import datetime
 from openai import OpenAI
 
-# OpenAI Client
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# Systemverhalten für GPT
 SYSTEM_PROMPT = (
     "Du bist eine freundliche, professionelle Assistentin einer ästhetischen Praxis. "
     "Sprich in Du-Form, antworte klar und sympathisch. "
@@ -22,34 +20,28 @@ CACHE_FILE = "website_data.txt"
 SCRAPER_SCRIPT = "scrape_site.py"
 MAX_CACHE_AGE_HOURS = 24
 
-# Website-Daten sicherstellen
 def ensure_website_data():
     needs_update = True
-
     if os.path.exists(CACHE_FILE):
         age_hours = (time.time() - os.path.getmtime(CACHE_FILE)) / 3600
         needs_update = age_hours > MAX_CACHE_AGE_HOURS
-
     if needs_update:
         os.system(f"python {SCRAPER_SCRIPT}")
 
 ensure_website_data()
 
-# Website-Text laden
 try:
     with open(CACHE_FILE, "r", encoding="utf-8") as f:
         WEBSITE_TEXT = f.read()[:15000]
 except:
     WEBSITE_TEXT = ""
 
-# Preise laden
 try:
     with open("preise.json", "r", encoding="utf-8") as f:
         PREISE = json.load(f)
 except:
     PREISE = {}
 
-# Synonyme für Preistreffer
 SYNONYMS = {
     "hyaluronspritze": "hyaluron",
     "hyaluronbehandlung": "hyaluron",
@@ -65,13 +57,10 @@ SYNONYMS = {
     "botox": "B. Botox"
 }
 
-# Text normalisieren
 def normalize(text):
-    return re.sub(r"[^a-z0-9äöüß]+", "", text.lower())
+    return re.sub(r"[^a-z0-9äöüß]+", " ", text.lower()).strip()
 
 class handler(BaseHTTPRequestHandler):
-
-    # Antwort senden
     def _send(self, status=200, body=None, content_type="application/json"):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
@@ -79,7 +68,6 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
         self.end_headers()
-
         if body is not None:
             if isinstance(body, (dict, list)):
                 body = json.dumps(body, ensure_ascii=False)
@@ -99,10 +87,12 @@ class handler(BaseHTTPRequestHandler):
                 return
 
             normalized = normalize(user_message)
+            tokens = set(normalized.split())
 
-            # Direkter Preistreffer
+            # Direkter Key-Treffer basierend auf Tokens
             for key, value in PREISE.items():
-                if normalize(key) in normalized:
+                key_norm = normalize(key)
+                if key_norm in tokens or key_norm in normalized:
                     reply = f"Die Preise für {key} beginnen {value}."
                     self._send(200, {"reply": reply})
                     return
@@ -114,10 +104,9 @@ class handler(BaseHTTPRequestHandler):
                     self._send(200, {"reply": reply})
                     return
 
-            # Levenshtein/Tippfehler-Treffer
-            all_terms = list(PREISE.keys()) + list(SYNONYMS.keys())
-            matches = difflib.get_close_matches(user_message.lower(), all_terms, n=1, cutoff=0.65)
-
+            # Tippfehler/Ähnlichkeit
+            possible_terms = list(PREISE.keys()) + list(SYNONYMS.keys())
+            matches = difflib.get_close_matches(user_message.lower(), possible_terms, n=1, cutoff=0.45)
             if matches:
                 m = matches[0]
                 term = SYNONYMS.get(m, m)
