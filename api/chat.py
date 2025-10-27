@@ -76,7 +76,7 @@ class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self._send(200, "")
 
-    def do_POST(self):
+        def do_POST(self):
         try:
             length = int(self.headers.get("content-length", 0))
             data = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
@@ -86,13 +86,19 @@ class handler(BaseHTTPRequestHandler):
                 self._send(400, {"error": "Feld 'message' ist leer."})
                 return
 
+            # Text normalisieren und Token generieren
             normalized = normalize(user_message)
             tokens = set(normalized.split())
 
-            # Direkter Key-Treffer basierend auf Tokens
+            # Direkter Preis-Treffer inkl. Wortstamm
             for key, value in PREISE.items():
                 key_norm = normalize(key)
-                if key_norm in tokens or key_norm in normalized:
+
+                if (
+                    key_norm in tokens
+                    or key_norm in normalized
+                    or any(key_norm in token for token in tokens)
+                ):
                     reply = f"Die Preise für {key} beginnen {value}."
                     self._send(200, {"reply": reply})
                     return
@@ -104,9 +110,12 @@ class handler(BaseHTTPRequestHandler):
                     self._send(200, {"reply": reply})
                     return
 
-            # Tippfehler/Ähnlichkeit
+            # Tippfehler-Erkennung
             possible_terms = list(PREISE.keys()) + list(SYNONYMS.keys())
-            matches = difflib.get_close_matches(user_message.lower(), possible_terms, n=1, cutoff=0.45)
+            matches = difflib.get_close_matches(
+                user_message.lower(), possible_terms, n=1, cutoff=0.45
+            )
+
             if matches:
                 m = matches[0]
                 term = SYNONYMS.get(m, m)
@@ -129,7 +138,7 @@ class handler(BaseHTTPRequestHandler):
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0.2
+                temperature=0.3
             )
 
             answer = completion.choices[0].message.content.strip()
