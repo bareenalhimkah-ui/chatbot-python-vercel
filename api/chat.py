@@ -1,10 +1,12 @@
 from http.server import BaseHTTPRequestHandler
-import os, json, re, time
+import os, json, re, time, difflib
 from datetime import datetime
 from openai import OpenAI
-from dotenv import load_dotenv  # ✅ hinzufügen
-CACHE_FILE = os.path.join(os.path.dirname(__file__), "../website_data.txt")
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../.env.local"))  # ✅ hinzufügen
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../.env.local"))
+
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 
 # 🔑 API-Client initialisieren
