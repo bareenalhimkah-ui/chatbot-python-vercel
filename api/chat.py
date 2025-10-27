@@ -62,6 +62,10 @@ except Exception as e:
     PREISE = {}
     print("⚠️ Fehler beim Laden der Preisdatei:", e)
 
+# 💆 Behandlungen ohne Preise
+with open(os.path.join(os.path.dirname(__file__), "behandlungen.json"), "r", encoding="utf-8") as f:
+    BEHANDLUNGEN = json.load(f)
+
 # 🔄 Synonyme für Preisabfragen
 SYNONYMS = {
     "hyaluronspritze": "hyaluron",
@@ -123,10 +127,15 @@ class handler(BaseHTTPRequestHandler):
 
             normalized_message = normalize(user_message)
 
-            # 💸 Preis-Erkennung (direkte Treffer)
+            # 💸 Preis-Erkennung (Priorität vor GPT)
             for key, price in PREISE.items():
                 if normalize(key) in normalized_message:
-                    reply = f"Die Preise für {key} beginnen {price}."
+                    if any(word in normalized_message for word in ["preis", "kosten", "wie viel", "ab", "teuer"]):
+                        reply = f"Die Preise für {key} beginnen {price}."
+                    elif key in BEHANDLUNGEN:
+                        reply = BEHANDLUNGEN[key]
+                    else:
+                        reply = f"{key} ist eine unserer beliebten Behandlungen."
                     self._send(200, {"reply": reply})
                     return
 
@@ -179,5 +188,5 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             print("❌ Fehler im Handler:", e)
             self._send(500, {"error": str(e)})
-            
+
 # ✅ Ende
