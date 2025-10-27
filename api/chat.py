@@ -4,7 +4,6 @@ import json
 import re
 import time
 import difflib
-from datetime import datetime
 from openai import OpenAI
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -20,6 +19,7 @@ CACHE_FILE = "website_data.txt"
 SCRAPER_SCRIPT = "scrape_site.py"
 MAX_CACHE_AGE_HOURS = 24
 
+
 def ensure_website_data():
     needs_update = True
     if os.path.exists(CACHE_FILE):
@@ -28,19 +28,23 @@ def ensure_website_data():
     if needs_update:
         os.system(f"python {SCRAPER_SCRIPT}")
 
+
 ensure_website_data()
+
 
 try:
     with open(CACHE_FILE, "r", encoding="utf-8") as f:
         WEBSITE_TEXT = f.read()[:15000]
 except:
-    WEBSITE_TEXT = ""
+    WEBSITE_TEXT = "Keine Webdaten verfügbar."
+
 
 try:
     with open("preise.json", "r", encoding="utf-8") as f:
         PREISE = json.load(f)
 except:
     PREISE = {}
+
 
 SYNONYMS = {
     "hyaluronspritze": "hyaluron",
@@ -57,10 +61,13 @@ SYNONYMS = {
     "botox": "B. Botox"
 }
 
+
 def normalize(text):
     return re.sub(r"[^a-z0-9äöüß]+", " ", text.lower()).strip()
 
+
 class handler(BaseHTTPRequestHandler):
+
     def _send(self, status=200, body=None, content_type="application/json"):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
@@ -76,7 +83,7 @@ class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self._send(200, "")
 
-        def do_POST(self):
+    def do_POST(self):
         try:
             length = int(self.headers.get("content-length", 0))
             data = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
@@ -86,14 +93,11 @@ class handler(BaseHTTPRequestHandler):
                 self._send(400, {"error": "Feld 'message' ist leer."})
                 return
 
-            # Text normalisieren und Token generieren
             normalized = normalize(user_message)
             tokens = set(normalized.split())
 
-            # Direkter Preis-Treffer inkl. Wortstamm
             for key, value in PREISE.items():
                 key_norm = normalize(key)
-
                 if (
                     key_norm in tokens
                     or key_norm in normalized
@@ -103,14 +107,12 @@ class handler(BaseHTTPRequestHandler):
                     self._send(200, {"reply": reply})
                     return
 
-            # Synonym-Treffer
             for syn, target in SYNONYMS.items():
                 if normalize(syn) in normalized and target in PREISE:
                     reply = f"Die Preise für {target} beginnen {PREISE[target]}."
                     self._send(200, {"reply": reply})
                     return
 
-            # Tippfehler-Erkennung
             possible_terms = list(PREISE.keys()) + list(SYNONYMS.keys())
             matches = difflib.get_close_matches(
                 user_message.lower(), possible_terms, n=1, cutoff=0.45
@@ -124,7 +126,6 @@ class handler(BaseHTTPRequestHandler):
                     self._send(200, {"reply": reply})
                     return
 
-            # GPT-Fallback
             prompt = (
                 "Beantworte die Nutzerfrage anhand des folgenden Website-Textes. "
                 "Wenn Preise genannt werden, nutze ausschließlich die Preisliste. "
