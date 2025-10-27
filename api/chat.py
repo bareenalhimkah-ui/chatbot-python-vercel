@@ -122,11 +122,6 @@ class handler(BaseHTTPRequestHandler):
                 self._send(400, {"error": "Feld 'message' ist leer."})
                 return
 
-            # 🔒 Datenschutzfilter
-            if re.search(r"(iban|straße|telefon|adresse|geheim|email)", user_message, re.IGNORECASE):
-                reply = "Aus Datenschutzgründen darf ich dazu keine Angaben machen."
-                self._send(200, {"reply": reply})
-                return
 
             # 💰 Preis-Logik mit robuster Synonym- & Tippfehlererkennung
             def normalize(text):
