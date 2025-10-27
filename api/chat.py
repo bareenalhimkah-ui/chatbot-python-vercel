@@ -149,7 +149,7 @@ class handler(BaseHTTPRequestHandler):
             # 🔁 Synonyme prüfen
             for synonym, target in SYNONYMS.items():
                 if normalize(synonym) in normalized_message:
-                    fragt_nach_preis = any(word in normalized_message for word in ["preis", "kosten", "teuer", "ab", "wie viel", "anfang"])
+                    fragt_nach_preis = any(word in normalized_message for word in ["preis", "kosten", "teuer", "ab", "wie viel", "anfang", "bietet"])
                     if fragt_nach_preis and target in PREISE:
                         reply = f"Die Preise für {target} beginnen {PREISE[target]}."
                     elif target in BEHANDLUNGEN:
