@@ -127,18 +127,35 @@ class handler(BaseHTTPRequestHandler):
 
             normalized_message = normalize(user_message)
 
-            # 💸 Preis-Erkennung (Priorität vor GPT)
-            for key, price in PREISE.items():
+           # 💸 Preis- und Behandlungs-Erkennung (intelligent)
+            found_key = None
+            for key in PREISE.keys():
                 if normalize(key) in normalized_message:
-                    # Wenn Preisnachfrage erkannt → Preis nennen
-                    if any(word in normalized_message for word in ["preis", "kosten", "wie viel", "ab", "teuer"]):
-                        reply = f"Die Preise für {key} beginnen {price}."
-                    # Sonst Beschreibung geben (wenn vorhanden)
-                    elif key in BEHANDLUNGEN:
-                        reply = BEHANDLUNGEN[key]
-                    # Falls weder Preis noch Beschreibung existiert
+                    found_key = key
+                    break
+
+            # Wenn ein Schlüssel (z. B. "B. Botox") gefunden wurde
+            if found_key:
+                fragt_nach_preis = any(word in normalized_message for word in ["preis", "kosten", "teuer", "ab", "wie viel", "anfang"])
+                if fragt_nach_preis:
+                    reply = f"Die Preise für {found_key} beginnen {PREISE[found_key]}."
+                elif found_key in BEHANDLUNGEN:
+                    reply = BEHANDLUNGEN[found_key]
+                else:
+                    reply = f"Ja, {found_key} bieten wir an. Möchtest du mehr darüber wissen?"
+                self._send(200, {"reply": reply})
+                return
+
+            # 🔁 Synonyme prüfen
+            for synonym, target in SYNONYMS.items():
+                if normalize(synonym) in normalized_message:
+                    fragt_nach_preis = any(word in normalized_message for word in ["preis", "kosten", "teuer", "ab", "wie viel", "anfang"])
+                    if fragt_nach_preis and target in PREISE:
+                        reply = f"Die Preise für {target} beginnen {PREISE[target]}."
+                    elif target in BEHANDLUNGEN:
+                        reply = BEHANDLUNGEN[target]
                     else:
-                        reply = f"Ja, {key} bieten wir an. Möchtest du mehr dazu wissen?"
+                        reply = f"Ja, {target} bieten wir an. Möchtest du mehr darüber wissen?"
                     self._send(200, {"reply": reply})
                     return
 
