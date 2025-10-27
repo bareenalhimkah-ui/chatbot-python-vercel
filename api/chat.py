@@ -24,6 +24,7 @@ SYSTEM_PROMPT = (
     "Wenn etwas fehlt, sag: 'Dazu liegt mir aktuell kein Preis vor.'"
 )
 
+BUNDLED_CACHE_FILE = ROOT_DIR / "website_data.txt"
 CACHE_FILE = BASE_DIR / "website_data.txt"
 SCRAPER_SCRIPT = BASE_DIR / "scrape_site.py"
 MAX_CACHE_AGE_HOURS = 24
@@ -74,11 +75,21 @@ def ensure_website_data() -> None:
 ensure_website_data()
 
 
-try:
-    WEBSITE_TEXT = CACHE_FILE.read_text(encoding="utf-8")[:15000]
-except Exception as exc:
-    print("Konnte Website-Daten nicht laden:", exc)
-    WEBSITE_TEXT = "Keine Webdaten verfügbar."
+def load_website_text() -> str:
+    # Bevorzugt wird der aktualisierbare Cache im API-Verzeichnis. Sollte dieser
+    # nicht verfügbar sein (z. B. beim ersten Deploy auf schreibgeschützten
+    # Umgebungen), greifen wir auf die gebündelte Datei im Projektstamm zurück.
+    candidates = [CACHE_FILE, BUNDLED_CACHE_FILE]
+    for path in candidates:
+        try:
+            if path.exists():
+                return path.read_text(encoding="utf-8")[:15000]
+        except Exception as exc:
+            print(f"Konnte Website-Daten aus {path} nicht laden:", exc)
+    return "Keine Webdaten verfügbar."
+
+
+WEBSITE_TEXT = load_website_text()
 
 
 try:
