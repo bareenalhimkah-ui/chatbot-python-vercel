@@ -1,4 +1,4 @@
-openai>=1.40.0
-
-beautifulsoup4
-requests
+openai>=1.14,<2
+requests>=2.31
+beautifulsoup4>=4.12
+lxml>=5.2    
