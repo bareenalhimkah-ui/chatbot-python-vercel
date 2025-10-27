@@ -130,12 +130,15 @@ class handler(BaseHTTPRequestHandler):
             # 💸 Preis-Erkennung (Priorität vor GPT)
             for key, price in PREISE.items():
                 if normalize(key) in normalized_message:
+                    # Wenn Preisnachfrage erkannt → Preis nennen
                     if any(word in normalized_message for word in ["preis", "kosten", "wie viel", "ab", "teuer"]):
                         reply = f"Die Preise für {key} beginnen {price}."
+                    # Sonst Beschreibung geben (wenn vorhanden)
                     elif key in BEHANDLUNGEN:
                         reply = BEHANDLUNGEN[key]
+                    # Falls weder Preis noch Beschreibung existiert
                     else:
-                        reply = f"{key} ist eine unserer beliebten Behandlungen."
+                        reply = f"Ja, {key} bieten wir an. Möchtest du mehr dazu wissen?"
                     self._send(200, {"reply": reply})
                     return
 
