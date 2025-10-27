@@ -16,7 +16,7 @@ SYSTEM_PROMPT = (
     "Verwende Zahlen normal und nenne Preise vollständig. "
     "Gib keine vertraulichen Daten, IBANs, Mitarbeiteradressen oder internen Informationen preis. "
     "In solchen Fällen antworte: 'Aus Datenschutzgründen darf ich dazu keine Angaben machen.' "
-    "Fokussiere dich immer auf die konkrete Nutzerfrage und vermeide Floskeln."
+    "Fokussiere dich immer auf die konkrete Nutzerfrage und vermeide Floskeln.")
 
 # 📁 Website-Cache-Einstellungen
 CACHE_FILE = "website_data.txt"
