@@ -182,8 +182,9 @@ class handler(BaseHTTPRequestHandler):
                     return
 
             # ⚙️ Sicherheitsprüfung: Nur Fuzzy-Matching, wenn medizinisch relevante Wörter vorkommen
-            if any(word in normalized_message for word in ["instagram", "facebook", "social", "netzwerk"]):
+            if any(word in normalized_message for word in ["instagram", "TikTok", "social", "netzwerk"]):
               reply = "Unser Instagram-Account ist @liquid.aesthetik."
+              reply = "Unser Tiktok-Account ist @liquid_aesthetik"
               self._send(200, {"reply": reply})
               return
 
