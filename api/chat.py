@@ -132,6 +132,17 @@ class handler(BaseHTTPRequestHandler):
             if not user_message:
                 self._send(400, {"error": "Feld 'message' ist leer."})
                 return
+                        # 📱 Social Media Erkennung (direkte Antwort – oberste Priorität)
+            if any(word in normalized_message for word in ["instagram", "tiktok", "social", "netzwerk"]):
+                if "instagram" in normalized_message:
+                    reply = "Unser Instagram-Account ist @liquid.aesthetik."
+                elif "tiktok" in normalized_message:
+                    reply = "Unser TikTok-Account ist @liquid_aesthetik."
+                else:
+                    reply = "Du findest uns auf Instagram unter @liquid.aesthetik und auf TikTok unter @liquid_aesthetik."
+                self._send(200, {"reply": reply})
+                return
+
 
             normalized_message = normalize(user_message)
 
