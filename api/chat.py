@@ -192,7 +192,7 @@ class handler(BaseHTTPRequestHandler):
             """
 
             completion = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4o",
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": prompt},
@@ -209,5 +209,12 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             print("❌ Fehler im Handler:", e)
             self._send(500, {"error": str(e)})
+        self.last_topic = None
+
+        # Wenn Nutzer nach "wie viel kostet Botox" fragt:
+        self.last_topic = "Botox"
+
+        # Wenn er danach schreibt "und Hyaluron?"
+        # → check: if self.last_topic: GPT kriegt den Kontext mit
 
 # ✅ Ende
