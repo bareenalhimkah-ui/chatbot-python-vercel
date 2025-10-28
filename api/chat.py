@@ -135,6 +135,12 @@ class handler(BaseHTTPRequestHandler):
 
             normalized_message = normalize(user_message)
 
+            # 📄 Kurzbeschreibung laden
+            try:
+                with open(os.path.join(os.path.dirname(__file__), "kurzbeschreibung.txt"), "r", encoding="utf-8") as f:
+                    kurzbeschreibung = f.read()
+            except:
+                kurzbeschreibung = ""
             # 💸 Preis- und Behandlungs-Erkennung (intelligent)
             found_key = None
             for key in PREISE.keys():
