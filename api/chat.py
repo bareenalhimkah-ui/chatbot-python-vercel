@@ -186,12 +186,18 @@ class handler(BaseHTTPRequestHandler):
              "behandlung", "botox", "hyaluron", "lippen", "falten", "lifting", "praxis", "kosmetik"
              ]
 
-            # ⚙️ Sicherheitsprüfung: Nur Fuzzy-Matching, wenn medizinisch relevante Wörter vorkommen
-            if any(word in normalized_message for word in ["instagram", "TikTok", "social", "netzwerk"]):
-              reply = "Unser Instagram-Account ist @liquid.aesthetik."
-              reply = "Unser Tiktok-Account ist @liquid_aesthetik"
-              self._send(200, {"reply": reply})
-              return
+                   # 📱 Social Media Erkennung (direkte Antwort)
+        if any(word in normalized_message for word in ["instagram", "tiktok", "social", "netzwerk"]):
+            if "instagram" in normalized_message:
+                reply = "Unser Instagram-Account ist @liquid.aesthetik."
+            elif "tiktok" in normalized_message:
+                reply = "Unser TikTok-Account ist @liquid_aesthetik."
+            else:
+                reply = "Du findest uns auf Instagram unter @liquid.aesthetik und auf TikTok unter @liquid_aesthetik."
+            self._send(200, {"reply": reply})
+            return
+
+
 
            
             if not any(word in normalized_message for word in medizinische_keywords):
