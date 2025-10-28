@@ -141,15 +141,14 @@ class handler(BaseHTTPRequestHandler):
                     kurzbeschreibung = f.read()
             except:
                 kurzbeschreibung = ""
-                
-            # 💸 Preis- und Behandlungs-Erkennung (intelligent)
+
+            # 💸 Preis- und Behandlungs-Erkennung
             found_key = None
             for key in PREISE.keys():
                 if normalize(key) in normalized_message:
                     found_key = key
                     break
 
-            # Wenn ein Schlüssel (z. B. "B. Botox") gefunden wurde
             if found_key:
                 fragt_nach_preis = any(word in normalized_message for word in ["preis", "kosten", "teuer", "ab", "wie viel", "anfang"])
                 if fragt_nach_preis:
@@ -174,34 +173,24 @@ class handler(BaseHTTPRequestHandler):
                     self._send(200, {"reply": reply})
                     return
 
-            # 🔁 Synonyme prüfen (Doppelprüfung)
-            for synonym, target in SYNONYMS.items():
-                if normalize(synonym) in normalized_message and target in PREISE:
-                    reply = f"Die Preise für {target} beginnen {PREISE[target]}."
-                    self._send(200, {"reply": reply})
-                    return
-
-                # ⚙️ Schlüsselwörter für medizinische Themen
+            # ⚙️ Schlüsselwörter für medizinische Themen
             medizinische_keywords = [
-             "behandlung", "botox", "hyaluron", "lippen", "falten", "lifting", "praxis", "kosmetik"
-             ]
+                "behandlung", "botox", "hyaluron", "lippen", "falten", "lifting", "praxis", "kosmetik"
+            ]
 
-                   # 📱 Social Media Erkennung (direkte Antwort)
-        if any(word in normalized_message for word in ["instagram", "tiktok", "social", "netzwerk"]):
-            if "instagram" in normalized_message:
-                reply = "Unser Instagram-Account ist @liquid.aesthetik."
-            elif "tiktok" in normalized_message:
-                reply = "Unser TikTok-Account ist @liquid_aesthetik."
-            else:
-                reply = "Du findest uns auf Instagram unter @liquid.aesthetik und auf TikTok unter @liquid_aesthetik."
-            self._send(200, {"reply": reply})
-            return
+            # 📱 Social Media Erkennung
+            if any(word in normalized_message for word in ["instagram", "tiktok", "social", "netzwerk"]):
+                if "instagram" in normalized_message:
+                    reply = "Unser Instagram-Account ist @liquid.aesthetik."
+                elif "tiktok" in normalized_message:
+                    reply = "Unser TikTok-Account ist @liquid_aesthetik."
+                else:
+                    reply = "Du findest uns auf Instagram unter @liquid.aesthetik und auf TikTok unter @liquid_aesthetik."
+                self._send(200, {"reply": reply})
+                return
 
-
-
-           
+            # 🧠 Allgemeine Themen (nicht medizinisch)
             if not any(word in normalized_message for word in medizinische_keywords):
-                # Kein relevanter Begriff → GPT antworten lassen
                 prompt = f"""
                 Du bist der Chatbot von Liquid Aesthetik.
                 Antworte basierend auf den Praxisinformationen.
@@ -223,94 +212,17 @@ class handler(BaseHTTPRequestHandler):
                 self._send(200, {"reply": reply})
                 return
 
-            # 🧩 Fuzzy-Matching
-            normalized_keys = {normalize(k): k for k in PREISE.keys()}
-            normalized_synonyms = {normalize(k): v for k, v in SYNONYMS.items()}
-            all_terms = list(normalized_keys.keys()) + list(normalized_synonyms.keys())
-            matches = difflib.get_close_matches(normalized_message, all_terms, n=1, cutoff=0.65)
-
-            if matches:
-                matched = matches[0]
-                target = normalized_synonyms.get(matched, normalized_keys.get(matched, matched))
-                if target in PREISE:
-                    reply = f"Die Preise für {target} beginnen {PREISE[target]}."
-                    self._send(200, {"reply": reply})
-                    return
-
-            # 📍 Erkennung: Nutzer fragt nach Adresse, Öffnungszeiten oder Kontakt
-            if any(word in normalized_message for word in ["adresse", "wo seid", "standort", "wo befindet", "anfahrt"]):
-                reply = "Unsere Praxis befindet sich in der Langgasse 20, 65183 Wiesbaden."
-                self._send(200, {"reply": reply})
-                return
-
-            if any(word in normalized_message for word in ["telefon", "nummer", "anrufen", "kontakt", "mail", "email"]):
-                reply = "Du erreichst uns unter 0157 – 880 588 48 oder per Mail an info@liquid-aesthetik.de."
-                self._send(200, {"reply": reply})
-                return
-
-            if any(word in normalized_message for word in ["öffnungszeit", "wann offen", "wann habt ihr auf", "zeiten"]):
-                reply = "Wir vergeben Termine nach Vereinbarung – melde dich einfach telefonisch oder per WhatsApp!"
-                self._send(200, {"reply": reply})
-                return
-
-            # 📄 Kurzbeschreibung nutzen, falls vorhanden
-            try:
-                with open(os.path.join(os.path.dirname(__file__), "kurzbeschreibung.txt"), "r", encoding="utf-8") as f:
-                    kurzbeschreibung = f.read()
-            except:
-                kurzbeschreibung = ""
-
-            # 🤖 Kein Preis → GPT-Antwort
-            prompt = f"""
-Du bist der Chatbot von Liquid Aesthetik.
-
-Hier sind strukturierte Praxisdaten:
-[ALLGEMEIN]
-{kurzbeschreibung}
-
-[WEBSITE]
-{WEBSITE_TEXT[:8000]}
-
-[PREISE]
-{json.dumps(PREISE, ensure_ascii=False, indent=2)}
-
-[BEHANDLUNGEN]
-{json.dumps(BEHANDLUNGEN, ensure_ascii=False, indent=2)}
-
-Antworte klar und freundlich, in Du-Form. Nutze immer die Daten aus den passenden Abschnitten:
-- Wenn es um Adresse, Philosophie oder Slogan geht → nimm [ALLGEMEIN].
-- Wenn es um Preise geht → nimm [PREISE].
-- Wenn es um Behandlungen geht → nimm [BEHANDLUNGEN].
-- Wenn es um allgemeine Infos geht → nutze [WEBSITE].
-Nutzerfrage: {user_message}
-"""
-
-            completion = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.3,
-                timeout=20,
-            )
-
-            reply = completion.choices[0].message.content.strip()
-            self._send(200, {"reply": reply})
-
         except json.JSONDecodeError:
             self._send(400, {"error": "Ungültiges JSON-Format."})
         except Exception as e:
             print("❌ Fehler im Handler:", e)
             self._send(500, {"error": str(e)})
 
-        # Reset conversational context
-        self.last_topic = None
 
-        #NUR LOkal testennnnn.:
-        if __name__ == "__main__":
-            from http.server import HTTPServer
-            port = 8000
-            server = HTTPServer(("127.0.0.1", port), handler)
-            print(f"🚀 Server läuft auf http://127.0.0.1:{port}/api/chat")
-            server.serve_forever()
+# 💻 Lokaler Testmodus
+if __name__ == "__main__":
+    from http.server import HTTPServer
+    port = 8000
+    server = HTTPServer(("127.0.0.1", port), handler)
+    print(f"🚀 Server läuft auf http://127.0.0.1:{port}/api/chat")
+    server.serve_forever()
