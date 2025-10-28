@@ -118,8 +118,8 @@ class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self._send(200, "")
 
-    def do_GET(self):
-        """Healthcheck für Vercel"""
+        def do_GET(self):
+         """Healthcheck für Vercel"""
         self._send(200, {"status": "ok", "time": datetime.now().isoformat()})
 
     def do_POST(self):
@@ -132,10 +132,11 @@ class handler(BaseHTTPRequestHandler):
             if not user_message:
                 self._send(400, {"error": "Feld 'message' ist leer."})
                 return
-            
-             normalized_message = normalize(user_message)
-            
-                        # 📱 Social Media Erkennung (direkte Antwort – oberste Priorität)
+
+            # 🔤 Nachricht normalisieren
+            normalized_message = normalize(user_message)
+
+            # 📱 Social Media Erkennung (direkte Antwort – oberste Priorität)
             if any(word in normalized_message for word in ["instagram", "tiktok", "social", "netzwerk"]):
                 if "instagram" in normalized_message:
                     reply = "Unser Instagram-Account ist @liquid.aesthetik."
@@ -145,6 +146,8 @@ class handler(BaseHTTPRequestHandler):
                     reply = "Du findest uns auf Instagram unter @liquid.aesthetik und auf TikTok unter @liquid_aesthetik."
                 self._send(200, {"reply": reply})
                 return
+
+
             
             # 📄 Kurzbeschreibung laden
             try:
