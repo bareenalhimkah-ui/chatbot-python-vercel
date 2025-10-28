@@ -181,6 +181,11 @@ class handler(BaseHTTPRequestHandler):
                     self._send(200, {"reply": reply})
                     return
 
+                # ⚙️ Schlüsselwörter für medizinische Themen
+            medizinische_keywords = [
+             "behandlung", "botox", "hyaluron", "lippen", "falten", "lifting", "praxis", "kosmetik"
+             ]
+
             # ⚙️ Sicherheitsprüfung: Nur Fuzzy-Matching, wenn medizinisch relevante Wörter vorkommen
             if any(word in normalized_message for word in ["instagram", "TikTok", "social", "netzwerk"]):
               reply = "Unser Instagram-Account ist @liquid.aesthetik."
