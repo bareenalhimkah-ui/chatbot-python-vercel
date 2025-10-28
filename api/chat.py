@@ -180,6 +180,28 @@ class handler(BaseHTTPRequestHandler):
                     reply = f"Die Preise für {target} beginnen {PREISE[target]}."
                     self._send(200, {"reply": reply})
                     return
+                        # 📍 Erkennung: Nutzer fragt nach Adresse, Öffnungszeiten oder Kontakt
+            if any(word in normalized_message for word in ["adresse", "wo seid", "standort", "wo befindet", "anfahrt"]):
+                reply = "Unsere Praxis befindet sich in der Langgasse 20, 65183 Wiesbaden."
+                self._send(200, {"reply": reply})
+                return
+
+            if any(word in normalized_message for word in ["telefon", "nummer", "anrufen", "kontakt", "mail", "email"]):
+                reply = "Du erreichst uns unter 0157 – 880 588 48 oder per Mail an info@liquid-aesthetik.de."
+                self._send(200, {"reply": reply})
+                return
+
+            if any(word in normalized_message for word in ["öffnungszeit", "wann offen", "wann habt ihr auf", "zeiten"]):
+                reply = "Wir vergeben Termine nach Vereinbarung – melde dich einfach telefonisch oder per WhatsApp!"
+                self._send(200, {"reply": reply})
+                return
+
+            # 📄 Kurzbeschreibung nutzen, falls vorhanden
+            try:
+                with open(os.path.join(os.path.dirname(__file__), "kurzbeschreibung.txt"), "r", encoding="utf-8") as f:
+                    kurzbeschreibung = f.read()
+            except:
+                kurzbeschreibung = ""
 
             # 🤖 Kein Preis → GPT-Antwort
             prompt = f"""
@@ -211,10 +233,3 @@ class handler(BaseHTTPRequestHandler):
             self._send(500, {"error": str(e)})
         self.last_topic = None
 
-        # Wenn Nutzer nach "wie viel kostet Botox" fragt:
-        self.last_topic = "Botox"
-
-        # Wenn er danach schreibt "und Hyaluron?"
-        # → check: if self.last_topic: GPT kriegt den Kontext mit
-
-# ✅ Ende
