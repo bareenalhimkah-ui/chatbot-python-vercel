@@ -182,9 +182,12 @@ class handler(BaseHTTPRequestHandler):
                     return
 
             # ⚙️ Sicherheitsprüfung: Nur Fuzzy-Matching, wenn medizinisch relevante Wörter vorkommen
-            medizinische_keywords = [
-                "behandlung", "botox", "hyaluron", "lippen", "falten", "lifting", "ästhetik", "praxis", "kosmetik"
-            ]
+            if any(word in normalized_message for word in ["instagram", "facebook", "social", "netzwerk"]):
+              reply = "Unser Instagram-Account ist @liquid.aesthetik."
+              self._send(200, {"reply": reply})
+              return
+
+           
             if not any(word in normalized_message for word in medizinische_keywords):
                 # Kein relevanter Begriff → GPT antworten lassen
                 prompt = f"""
