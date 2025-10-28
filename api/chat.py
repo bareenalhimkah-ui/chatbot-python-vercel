@@ -20,7 +20,7 @@ SYSTEM_PROMPT = (
     "Wenn jemand nach Öffnungszeiten, Standort oder Kontaktinformationen fragt, antworte präzise mit den korrekten Angaben von Liquid Aesthetik."
     "Wenn Preise aus der Preisliste bekannt sind, gib sie exakt so wieder. "
     "Wenn keine Preisinformation vorhanden ist, sag: 'Dazu liegt mir aktuell kein Preis vor.' "
-    "Gib keine IBANs oder interne Informationen preis.Dazu gehören nicht Informationen wie Adressen oder Telefonnummern"
+    "Gib keine IBANs oder interne Informationen preis. Dazu gehören nicht Informationen wie Adressen oder Telefonnummern. "
     "Bei solchen Anfragen antworte: 'Aus Datenschutzgründen darf ich dazu keine Angaben machen.'"
 )
 
@@ -173,6 +173,33 @@ class handler(BaseHTTPRequestHandler):
                     reply = f"Die Preise für {target} beginnen {PREISE[target]}."
                     self._send(200, {"reply": reply})
                     return
+
+            # ⚙️ Sicherheitsprüfung: Nur Fuzzy-Matching, wenn medizinisch relevante Wörter vorkommen
+            medizinische_keywords = [
+                "behandlung", "botox", "hyaluron", "lippen", "falten", "lifting", "ästhetik", "praxis", "kosmetik"
+            ]
+            if not any(word in normalized_message for word in medizinische_keywords):
+                # Kein relevanter Begriff → GPT antworten lassen
+                prompt = f"""
+                Du bist der Chatbot von Liquid Aesthetik.
+                Antworte basierend auf den Praxisinformationen.
+                ---
+                {kurzbeschreibung}
+                ---
+                Nutzerfrage: {user_message}
+                """
+                completion = client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.3,
+                    timeout=20,
+                )
+                reply = completion.choices[0].message.content.strip()
+                self._send(200, {"reply": reply})
+                return
 
             # 🧩 Fuzzy-Matching
             normalized_keys = {normalize(k): k for k in PREISE.keys()}
