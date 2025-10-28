@@ -29,6 +29,7 @@ CACHE_FILE = os.path.join(os.path.dirname(__file__), "website_data.txt")
 SCRAPER_SCRIPT = os.path.join(os.path.dirname(__file__), "scrape_site.py")
 MAX_CACHE_AGE_HOURS = 24
 
+
 # 🌍 Website-Daten sicherstellen
 def ensure_website_data():
     try:
@@ -43,6 +44,7 @@ def ensure_website_data():
     except Exception as e:
         print("⚠️ Fehler beim Aktualisieren der Website-Daten:", e)
 
+
 # 🔄 Website laden
 ensure_website_data()
 try:
@@ -52,6 +54,7 @@ try:
 except Exception as e:
     WEBSITE_TEXT = "Fehler beim Laden der Website."
     print("❌ Website konnte nicht geladen werden:", e)
+
 
 # 💰 Preise laden
 try:
@@ -63,9 +66,11 @@ except Exception as e:
     PREISE = {}
     print("⚠️ Fehler beim Laden der Preisdatei:", e)
 
+
 # 💆 Behandlungen ohne Preise
 with open(os.path.join(os.path.dirname(__file__), "behandlungen.json"), "r", encoding="utf-8") as f:
     BEHANDLUNGEN = json.load(f)
+
 
 # 🔄 Synonyme für Preisabfragen
 SYNONYMS = {
@@ -87,12 +92,14 @@ SYNONYMS = {
     "b botox": "B. Botox"
 }
 
+
 # 🧠 Text-Normalisierung für Preisvergleich
 def normalize(text):
     text = text.lower()
     text = text.replace(" ", "").replace(".", "").replace(",", "").replace("ml", "milliliter")
     text = re.sub(r"[^a-z0-9äöüß]", "", text)
     return text
+
 
 # 🧩 Hauptklasse für Vercel-API
 class handler(BaseHTTPRequestHandler):
@@ -128,7 +135,7 @@ class handler(BaseHTTPRequestHandler):
 
             normalized_message = normalize(user_message)
 
-           # 💸 Preis- und Behandlungs-Erkennung (intelligent)
+            # 💸 Preis- und Behandlungs-Erkennung (intelligent)
             found_key = None
             for key in PREISE.keys():
                 if normalize(key) in normalized_message:
@@ -160,7 +167,7 @@ class handler(BaseHTTPRequestHandler):
                     self._send(200, {"reply": reply})
                     return
 
-            # 🔁 Synonyme prüfen
+            # 🔁 Synonyme prüfen (Doppelprüfung)
             for synonym, target in SYNONYMS.items():
                 if normalize(synonym) in normalized_message and target in PREISE:
                     reply = f"Die Preise für {target} beginnen {PREISE[target]}."
@@ -180,7 +187,8 @@ class handler(BaseHTTPRequestHandler):
                     reply = f"Die Preise für {target} beginnen {PREISE[target]}."
                     self._send(200, {"reply": reply})
                     return
-                        # 📍 Erkennung: Nutzer fragt nach Adresse, Öffnungszeiten oder Kontakt
+
+            # 📍 Erkennung: Nutzer fragt nach Adresse, Öffnungszeiten oder Kontakt
             if any(word in normalized_message for word in ["adresse", "wo seid", "standort", "wo befindet", "anfahrt"]):
                 reply = "Unsere Praxis befindet sich in der Langgasse 20, 65183 Wiesbaden."
                 self._send(200, {"reply": reply})
@@ -205,17 +213,28 @@ class handler(BaseHTTPRequestHandler):
 
             # 🤖 Kein Preis → GPT-Antwort
             prompt = f"""
-                Du bist der Chatbot von Liquid Aesthetik.
-                Hier sind wichtige Praxisinformationen:
-            ---
-            {kurzbeschreibung}
-Verwende diese Daten, wenn der Nutzer danach fragt (z. B. Slogan, Adresse, Behandlungen oder Philosophie).
+Du bist der Chatbot von Liquid Aesthetik.
+
+Hier sind strukturierte Praxisdaten:
+[ALLGEMEIN]
+{kurzbeschreibung}
+
+[WEBSITE]
+{WEBSITE_TEXT[:8000]}
+
+[PREISE]
+{json.dumps(PREISE, ensure_ascii=False, indent=2)}
+
+[BEHANDLUNGEN]
+{json.dumps(BEHANDLUNGEN, ensure_ascii=False, indent=2)}
+
+Antworte klar und freundlich, in Du-Form. Nutze immer die Daten aus den passenden Abschnitten:
+- Wenn es um Adresse, Philosophie oder Slogan geht → nimm [ALLGEMEIN].
+- Wenn es um Preise geht → nimm [PREISE].
+- Wenn es um Behandlungen geht → nimm [BEHANDLUNGEN].
+- Wenn es um allgemeine Infos geht → nutze [WEBSITE].
 Nutzerfrage: {user_message}
-""
-            {WEBSITE_TEXT}
-            ---
-            Nutzerfrage: {user_message}
-            """
+"""
 
             completion = client.chat.completions.create(
                 model="gpt-4o",
@@ -235,5 +254,6 @@ Nutzerfrage: {user_message}
         except Exception as e:
             print("❌ Fehler im Handler:", e)
             self._send(500, {"error": str(e)})
-        self.last_topic = None
 
+        # Reset conversational context
+        self.last_topic = None
