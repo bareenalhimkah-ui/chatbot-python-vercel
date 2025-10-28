@@ -146,6 +146,31 @@ class handler(BaseHTTPRequestHandler):
                     reply = "Du findest uns auf Instagram unter @liquid.aesthetik und auf TikTok unter @liquid_aesthetik."
                 self._send(200, {"reply": reply})
                 return
+                        # 📍 Standort & Entfernung erkennen
+            if any(word in normalized_message for word in ["wo", "befindet", "adresse", "anfahrt", "langgasse", "wiesbaden", "standort", "karte", "weg"]):
+                reply = "Liquid Aesthetik befindet sich in der Langgasse 20, 65183 Wiesbaden. Termine sind nach Vereinbarung möglich."
+                self._send(200, {"reply": reply})
+                return
+
+                        # 📍 Standort & Entfernung erkennen
+            if any(word in normalized_message for word in ["wo", "befindet", "adresse", "anfahrt", "langgasse", "wiesbaden", "standort", "karte", "weg"]):
+                reply = "Liquid Aesthetik befindet sich in der Langgasse 20, 65183 Wiesbaden. Termine sind nach Vereinbarung möglich."
+                self._send(200, {"reply": reply})
+                return
+
+            # 📍 Dynamische Entfernungserkennung
+            city_match = re.search(r"aus\s+([a-zäöüß]+)", user_message)
+            if city_match:
+                city = city_match.group(1).capitalize()
+                reply = f"Von {city} aus sind es etwa 20–40 Minuten bis zu uns nach Wiesbaden – je nach Verkehr. Unsere Praxis liegt zentral in der Langgasse 20."
+                self._send(200, {"reply": reply})
+                return
+
+            if any(word in normalized_message for word in ["entfernt", "weit", "von mir", "wie lange", "fahrt", "fahrzeit"]):
+                reply = "Das hängt davon ab, von wo du kommst – wir sind in der Langgasse 20 in Wiesbaden, gut erreichbar aus dem gesamten Rhein-Main-Gebiet."
+                self._send(200, {"reply": reply})
+                return
+
 
 
             
