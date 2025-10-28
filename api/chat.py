@@ -205,9 +205,13 @@ class handler(BaseHTTPRequestHandler):
 
             # 🤖 Kein Preis → GPT-Antwort
             prompt = f"""
-            Du bist ein Chatbot für Liquid Aesthetik.
-            Verwende den folgenden Website-Text, um Fragen zu beantworten:
+                Du bist der Chatbot von Liquid Aesthetik.
+                Hier sind wichtige Praxisinformationen:
             ---
+            {kurzbeschreibung}
+Verwende diese Daten, wenn der Nutzer danach fragt (z. B. Slogan, Adresse, Behandlungen oder Philosophie).
+Nutzerfrage: {user_message}
+""
             {WEBSITE_TEXT}
             ---
             Nutzerfrage: {user_message}
