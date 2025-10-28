@@ -141,6 +141,7 @@ class handler(BaseHTTPRequestHandler):
                     kurzbeschreibung = f.read()
             except:
                 kurzbeschreibung = ""
+                
             # 💸 Preis- und Behandlungs-Erkennung (intelligent)
             found_key = None
             for key in PREISE.keys():
