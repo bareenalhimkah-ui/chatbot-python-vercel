@@ -290,3 +290,11 @@ Nutzerfrage: {user_message}
 
         # Reset conversational context
         self.last_topic = None
+
+        #NUR LOkal testennnnn.:
+        if __name__ == "__main__":
+            from http.server import HTTPServer
+            port = 8000
+            server = HTTPServer(("127.0.0.1", port), handler)
+            print(f"🚀 Server läuft auf http://127.0.0.1:{port}/api/chat")
+            server.serve_forever()
