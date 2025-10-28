@@ -45,14 +45,14 @@ def ensure_website_data():
         print("⚠️ Fehler beim Aktualisieren der Website-Daten:", e)
 
 
-# 🔄 Website laden
-ensure_website_data()
+# 🔄 Website statisch laden (Vercel: Read-only Fix)
 try:
+    CACHE_FILE = os.path.join(os.path.dirname(__file__), "website.txt")
     with open(CACHE_FILE, "r", encoding="utf-8") as f:
         WEBSITE_TEXT = f.read()[:16000]
-        print(f"✅ Website geladen ({len(WEBSITE_TEXT)} Zeichen)")
+        print(f"✅ Website statisch geladen ({len(WEBSITE_TEXT)} Zeichen)")
 except Exception as e:
-    WEBSITE_TEXT = "Fehler beim Laden der Website."
+    WEBSITE_TEXT = "Fehler beim Laden der statischen Website."
     print("❌ Website konnte nicht geladen werden:", e)
 
 
