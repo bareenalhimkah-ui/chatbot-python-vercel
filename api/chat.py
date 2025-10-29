@@ -142,10 +142,9 @@ class handler(BaseHTTPRequestHandler):
                 self._send(400, {"error": "Feld 'message' ist leer."})
                 return
 
-            # 🔤 Nachricht normalisieren
             normalized_message = normalize(user_message)
 
-            # 📱 Social Media Erkennung (direkte Antwort – oberste Priorität)
+            # 📱 Social Media Erkennung
             if any(word in normalized_message for word in ["instagram", "tiktok", "social", "netzwerk"]):
                 if "instagram" in normalized_message:
                     reply = "Unser Instagram-Account ist @liquid.aesthetik."
@@ -156,27 +155,7 @@ class handler(BaseHTTPRequestHandler):
                 self._send(200, {"reply": reply})
                 return
 
-            # 🔤 Nachricht normalisieren
-            normalized_message = normalize(user_message)
-            
-            # 🚫 Sicherheits- & Datenschutzprüfung (NEU)
-            forbidden_keywords = [
-                "geheim", "iban", "bank", "konto", "passwort", "intern",
-                "login", "gehalt", "zugang", "server", "datenbank",
-                "privat", "vertraulich", "daten", "nummer", "pin", "firmendaten", "mitarbeiter"
-            ]
-            
-            if any(word in normalized_message for word in forbidden_keywords):
-                reply = (
-                    "Aus Datenschutz- und Sicherheitsgründen darf ich darüber leider keine Angaben machen. "
-                    "Ich helfe dir aber gern bei allen Fragen zu Behandlungen, Preisen oder Terminen. 💬"
-                )
-                self._send(200, {"reply": reply})
-                return
-            # 🔤 Nachricht normalisieren
-            normalized_message = normalize(user_message)
-            
-            # 🚫 Sicherheits- & Datenschutzprüfung (NEU)
+            # 🚫 Sicherheitsprüfung
             forbidden_keywords = [
                 "geheim", "iban", "bank", "konto", "passwort", "intern",
                 "login", "gehalt", "zugang", "server", "datenbank",
@@ -191,7 +170,18 @@ class handler(BaseHTTPRequestHandler):
                 self._send(200, {"reply": reply})
                 return
 
-            # 🧭 Anfahrt / Entfernung → GPT beantworten lassen
+            normalized_message = normalize(user_message)
+
+            # 🚫 Sicherheitsprüfung wiederholt (nur einmal nötig)
+            if any(word in normalized_message for word in forbidden_keywords):
+                reply = (
+                    "Aus Datenschutz- und Sicherheitsgründen darf ich darüber leider keine Angaben machen. "
+                    "Ich helfe dir aber gern bei allen Fragen zu Behandlungen, Preisen oder Terminen. 💬"
+                )
+                self._send(200, {"reply": reply})
+                return
+
+            # 🧭 Anfahrts- / Entfernungsfragen
             if any(k in user_message for k in [
                 "wie weit", "wie lange", "entfernt", "fahrzeit", "fahrt",
                 "anfahrt", "route", "weg", "von mir", "nach wiesbaden"
@@ -199,20 +189,15 @@ class handler(BaseHTTPRequestHandler):
                 prompt = f"""
                 Du bist die Assistentin von Liquid Aesthetik.
                 Adresse der Praxis: Langgasse 20, 65183 Wiesbaden.
-
+                
                 AUFGABE:
-                - Beantworte Anfahrts- oder Entfernungsfragen kurz (1–2 Sätze), freundlich und ehrlich.
-                - Wenn der Nutzer einen Ort nennt (z. B. Mainz, Frankfurt, Rüsselsheim, Darmstadt):
-                * Gib eine grobe, realistische Zeitspanne für das Rhein-Main-Gebiet als Schätzung an
-                    (z. B. Mainz 20–40 Min, Frankfurt 30–50 Min, Rüsselsheim 15–30 Min, Darmstadt 35–55 Min – jeweils „je nach Verkehr“).
-                - Wenn kein Startort genannt wird:
-                * Bitte freundlich in einem einzigen Satz um den Startort.
-                - Nenne immer die Praxisadresse und erwähne kurz, dass Google Maps die genaueste Zeit liefert.
-                -"Gib bei Anfahrtszeiten immer eine grobe Schätzung (z. B. 20–40 Minuten) und sag 'je nach Verkehr'. Erfinde keine exakten Kilometer oder Zeiten."
-
-
-Nutzerfrage: {user_message}
-"""
+                - Kurz antworten, freundlich
+                - Bei Städten grobe Zeitspannen „je nach Verkehr“
+                - Adresse immer nennen
+                - Google Maps für genaue Zeit erwähnen
+                
+                Nutzerfrage: {user_message}
+                """
                 completion = client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
@@ -225,7 +210,7 @@ Nutzerfrage: {user_message}
                 reply = completion.choices[0].message.content.strip()
                 self._send(200, {"reply": reply})
                 return
-            
+
             # 📄 Kurzbeschreibung laden
             try:
                 with open(os.path.join(os.path.dirname(__file__), "kurzbeschreibung.txt"), "r", encoding="utf-8") as f:
@@ -233,7 +218,7 @@ Nutzerfrage: {user_message}
             except:
                 kurzbeschreibung = ""
 
-            # 💸 Preis- und Behandlungs-Erkennung
+            # 💸 Preis-/Behandlungserkennung
             found_key = None
             for key in PREISE.keys():
                 if normalize(key) in normalized_message:
@@ -264,23 +249,11 @@ Nutzerfrage: {user_message}
                     self._send(200, {"reply": reply})
                     return
 
-            # ⚙️ Schlüsselwörter für medizinische Themen
             medizinische_keywords = [
                 "behandlung", "botox", "hyaluron", "lippen", "falten", "lifting", "praxis", "kosmetik"
             ]
 
-            # 📱 Social Media Erkennung
-            if any(word in normalized_message for word in ["instagram", "tiktok", "social", "netzwerk"]):
-                if "instagram" in normalized_message:
-                    reply = "Unser Instagram-Account ist @liquid.aesthetik."
-                elif "tiktok" in normalized_message:
-                    reply = "Unser TikTok-Account ist @liquid_aesthetik."
-                else:
-                    reply = "Du findest uns auf Instagram unter @liquid.aesthetik und auf TikTok unter @liquid_aesthetik."
-                self._send(200, {"reply": reply})
-                return
-
-            # 🧠 Allgemeine Themen (nicht medizinisch)
+            # 🧠 Nicht-medizinische Fragen → GPT
             if not any(word in normalized_message for word in medizinische_keywords):
                 prompt = f"""
                 Du bist der Chatbot von Liquid Aesthetik.
