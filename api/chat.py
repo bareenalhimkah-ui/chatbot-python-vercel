@@ -65,7 +65,6 @@ except Exception as e:
     print("❌ Website konnte nicht geladen werden:", e)
 
 
-
 # 💰 Preise laden
 try:
     PREISE_PATH = os.path.join(os.path.dirname(__file__), "preise.json")
@@ -126,10 +125,10 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(body.encode("utf-8"))
 
     def do_OPTIONS(self):
-            self._send(200, "")
+        self._send(200, "")
 
     def do_GET(self):
-         """Healthcheck für Vercel"""
+        """Healthcheck für Vercel"""
         self._send(200, {"status": "ok", "time": datetime.now().isoformat()})
 
     def do_POST(self):
