@@ -156,7 +156,41 @@ class handler(BaseHTTPRequestHandler):
                 self._send(200, {"reply": reply})
                 return
 
+           # 🔤 Nachricht normalisieren
             normalized_message = normalize(user_message)
+            
+            # 🚫 Sicherheits- & Datenschutzprüfung (NEU)
+            forbidden_keywords = [
+                "geheim", "iban", "bank", "konto", "passwort", "intern",
+                "login", "gehalt", "zugang", "server", "datenbank",
+                "privat", "vertraulich", "daten", "nummer", "pin", "firmendaten", "mitarbeiter"
+            ]
+            
+            if any(word in normalized_message for word in forbidden_keywords):
+                reply = (
+                    "Aus Datenschutz- und Sicherheitsgründen darf ich darüber leider keine Angaben machen. "
+                    "Ich helfe dir aber gern bei allen Fragen zu Behandlungen, Preisen oder Terminen. 💬"
+                )
+                self._send(200, {"reply": reply})
+                return
+            # 🔤 Nachricht normalisieren
+            normalized_message = normalize(user_message)
+            
+            # 🚫 Sicherheits- & Datenschutzprüfung (NEU)
+            forbidden_keywords = [
+                "geheim", "iban", "bank", "konto", "passwort", "intern",
+                "login", "gehalt", "zugang", "server", "datenbank",
+                "privat", "vertraulich", "daten", "nummer", "pin", "firmendaten", "mitarbeiter"
+            ]
+
+if any(word in normalized_message for word in forbidden_keywords):
+    reply = (
+        "Aus Datenschutz- und Sicherheitsgründen darf ich darüber leider keine Angaben machen. "
+        "Ich helfe dir aber gern bei allen Fragen zu Behandlungen, Preisen oder Terminen. 💬"
+    )
+    self._send(200, {"reply": reply})
+    return
+
 
             # 🧭 Anfahrt / Entfernung → GPT beantworten lassen
             if any(k in user_message for k in [
