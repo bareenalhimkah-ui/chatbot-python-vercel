@@ -4,7 +4,16 @@ from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
 
+
 MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
+
+# ⚙️ Modell aus ENV wählen: erst FINETUNED_MODEL, dann OPENAI_MODEL, sonst Fallback
+MODEL = (
+    os.environ.get("FINETUNED_MODEL")
+    or os.environ.get("OPENAI_MODEL")
+    or "gpt-4o"
+)
+
 
 # 🔐 .env.local laden (nur wenn vorhanden)
 env_path = os.path.join(os.path.dirname(__file__), "../.env.local")
@@ -13,6 +22,9 @@ if os.path.exists(env_path):
 
 # 🔑 OpenAI-Client initialisieren
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+#Fine-Tuning-Modell
+MODEL = "ft:gpt-4o-mini-2024-07-18:bareen::CW6GdbsO"
 
 # 💬 System-Prompt
 SYSTEM_PROMPT = (
@@ -100,7 +112,7 @@ SYNONYMS = {
     "botoxbehandlung": "B. Botox",
     "botox": "B. Botox",
     "b.botox": "B. Botox",
-    "b botox": "B. Botox"
+    "b botox": "B. Botox",
 }
 
 
@@ -174,7 +186,31 @@ class handler(BaseHTTPRequestHandler):
 
             normalized_message = normalize(user_message)
 
-            # 🚫 Sicherheitsprüfung wiederholt (nur einmal nötig)
+            # 🔤 Nachricht normalisieren (erneut nach früheren Returns)
+            normalized_message = normalize(user_message)
+
+            # 🚫 Sicherheits- & Datenschutzprüfung
+            forbidden_keywords = [
+                "geheim",
+                "iban",
+                "bank",
+                "konto",
+                "passwort",
+                "intern",
+                "login",
+                "gehalt",
+                "zugang",
+                "server",
+                "datenbank",
+                "privat",
+                "vertraulich",
+                "daten",
+                "nummer",
+                "pin",
+                "firmendaten",
+                "mitarbeiter",
+            ]
+
             if any(word in normalized_message for word in forbidden_keywords):
                 reply = (
                     "Aus Datenschutz- und Sicherheitsgründen darf ich darüber leider keine Angaben machen. "
@@ -188,20 +224,49 @@ class handler(BaseHTTPRequestHandler):
                 "wie weit", "wie lange", "entfernt", "fahrzeit", "fahrt",
                 "anfahrt", "route", "weg", "von mir", "nach wiesbaden"
             ]):
+
+            # 🧭 Anfahrt / Entfernung → GPT beantworten lassen
+            if any(
+                k in user_message
+                for k in [
+                    "wie weit",
+                    "wie lange",
+                    "entfernt",
+                    "fahrzeit",
+                    "fahrt",
+                    "anfahrt",
+                    "route",
+                    "weg",
+                    "von mir",
+                    "nach wiesbaden",
+                ]
+            ):
+
                 prompt = f"""
                 Du bist die Assistentin von Liquid Aesthetik.
                 Adresse der Praxis: Langgasse 20, 65183 Wiesbaden.
                 
                 AUFGABE:
+
                 - Kurz antworten, freundlich
                 - Bei Städten grobe Zeitspannen „je nach Verkehr“
                 - Adresse immer nennen
                 - Google Maps für genaue Zeit erwähnen
                 
+
+                - Beantworte Anfahrts- oder Entfernungsfragen kurz (1–2 Sätze), freundlich und ehrlich.
+                - Wenn der Nutzer einen Ort nennt (z. B. Mainz, Frankfurt, Rüsselsheim, Darmstadt):
+                  * Gib eine grobe, realistische Zeitspanne für das Rhein-Main-Gebiet als Schätzung an
+                    (z. B. Mainz 20–40 Min, Frankfurt 30–50 Min, Rüsselsheim 15–30 Min, Darmstadt 35–55 Min – jeweils „je nach Verkehr“).
+                - Wenn kein Startort genannt wird:
+                  * Bitte freundlich in einem einzigen Satz um den Startort.
+                - Nenne immer die Praxisadresse und erwähne kurz, dass Google Maps die genaueste Zeit liefert.
+                - Gib bei Anfahrtszeiten immer eine grobe Schätzung (z. B. 20–40 Minuten) und sag 'je nach Verkehr'. Erfinde keine exakten Kilometer oder Zeiten. 
+
                 Nutzerfrage: {user_message}
                 """
                 completion = client.chat.completions.create(
-                    model="gpt-4o",
+                    model=MODEL,
                     messages=[
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": prompt},
@@ -215,7 +280,11 @@ class handler(BaseHTTPRequestHandler):
 
             # 📄 Kurzbeschreibung laden
             try:
-                with open(os.path.join(os.path.dirname(__file__), "kurzbeschreibung.txt"), "r", encoding="utf-8") as f:
+                with open(
+                    os.path.join(os.path.dirname(__file__), "kurzbeschreibung.txt"),
+                    "r",
+                    encoding="utf-8",
+                ) as f:
                     kurzbeschreibung = f.read()
             except:
                 kurzbeschreibung = ""
@@ -228,7 +297,10 @@ class handler(BaseHTTPRequestHandler):
                     break
 
             if found_key:
-                fragt_nach_preis = any(word in normalized_message for word in ["preis", "kosten", "teuer", "ab", "wie viel", "anfang"])
+                fragt_nach_preis = any(
+                    word in normalized_message
+                    for word in ["preis", "kosten", "teuer", "ab", "wie viel", "anfang"]
+                )
                 if fragt_nach_preis:
                     reply = f"Die Preise für {found_key} beginnen {PREISE[found_key]}."
                 elif found_key in BEHANDLUNGEN:
@@ -241,7 +313,18 @@ class handler(BaseHTTPRequestHandler):
             # 🔁 Synonyme prüfen
             for synonym, target in SYNONYMS.items():
                 if normalize(synonym) in normalized_message:
-                    fragt_nach_preis = any(word in normalized_message for word in ["preis", "kosten", "teuer", "ab", "wie viel", "anfang", "bietet"])
+                    fragt_nach_preis = any(
+                        word in normalized_message
+                        for word in [
+                            "preis",
+                            "kosten",
+                            "teuer",
+                            "ab",
+                            "wie viel",
+                            "anfang",
+                            "bietet",
+                        ]
+                    )
                     if fragt_nach_preis and target in PREISE:
                         reply = f"Die Preise für {target} beginnen {PREISE[target]}."
                     elif target in BEHANDLUNGEN:
@@ -252,10 +335,32 @@ class handler(BaseHTTPRequestHandler):
                     return
 
             medizinische_keywords = [
-                "behandlung", "botox", "hyaluron", "lippen", "falten", "lifting", "praxis", "kosmetik"
+                "behandlung",
+                "botox",
+                "hyaluron",
+                "lippen",
+                "falten",
+                "lifting",
+                "praxis",
+                "kosmetik",
             ]
 
+
             # 🧠 Nicht-medizinische Fragen → GPT
+
+            # 📱 Social Media Erkennung (Fallback – falls oben nicht gegriffen)
+            if any(word in normalized_message for word in ["instagram", "tiktok", "social", "netzwerk"]):
+                if "instagram" in normalized_message:
+                    reply = "Unser Instagram-Account ist @liquid.aesthetik."
+                elif "tiktok" in normalized_message:
+                    reply = "Unser TikTok-Account ist @liquid_aesthetik."
+                else:
+                    reply = "Du findest uns auf Instagram unter @liquid.aesthetik und auf TikTok unter @liquid_aesthetik."
+                self._send(200, {"reply": reply})
+                return
+
+            # 🧠 Allgemeine Themen (nicht medizinisch)
+
             if not any(word in normalized_message for word in medizinische_keywords):
                 prompt = f"""
                 Du bist der Chatbot von Liquid Aesthetik.
@@ -266,7 +371,7 @@ class handler(BaseHTTPRequestHandler):
                 Nutzerfrage: {user_message}
                 """
                 completion = client.chat.completions.create(
-                    model="gpt-4o",
+                    model=MODEL,
                     messages=[
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": prompt},
