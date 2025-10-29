@@ -125,10 +125,10 @@ class handler(BaseHTTPRequestHandler):
                 body = json.dumps(body, ensure_ascii=False)
             self.wfile.write(body.encode("utf-8"))
 
-        def do_OPTIONS(self):
+    def do_OPTIONS(self):
             self._send(200, "")
 
-        def do_GET(self):
+    def do_GET(self):
          """Healthcheck für Vercel"""
         self._send(200, {"status": "ok", "time": datetime.now().isoformat()})
 
