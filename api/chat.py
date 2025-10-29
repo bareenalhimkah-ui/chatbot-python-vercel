@@ -219,11 +219,6 @@ class handler(BaseHTTPRequestHandler):
                 self._send(200, {"reply": reply})
                 return
 
-            # 🧭 Anfahrts- / Entfernungsfragen
-            if any(k in user_message for k in [
-                "wie weit", "wie lange", "entfernt", "fahrzeit", "fahrt",
-                "anfahrt", "route", "weg", "von mir", "nach wiesbaden"
-            ]):
 
             # 🧭 Anfahrt / Entfernung → GPT beantworten lassen
             if any(
