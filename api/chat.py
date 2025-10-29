@@ -128,7 +128,7 @@ class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self._send(200, "")
 
-        def do_GET(self):
+    def do_GET(self):
          """Healthcheck für Vercel"""
         self._send(200, {"status": "ok", "time": datetime.now().isoformat()})
 
