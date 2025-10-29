@@ -47,13 +47,23 @@ def ensure_website_data():
 
 # 🔄 Website statisch laden (Vercel: Read-only Fix)
 try:
-    CACHE_FILE = os.path.join(os.path.dirname(__file__), "website.txt")
-    with open(CACHE_FILE, "r", encoding="utf-8") as f:
-        WEBSITE_TEXT = f.read()[:16000]
-        print(f"✅ Website statisch geladen ({len(WEBSITE_TEXT)} Zeichen)")
+    CACHE_FILE = os.path.join(os.path.dirname(__file__), "website_data.txt")
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            WEBSITE_TEXT = f.read()[:16000]
+            print(f"✅ Website statisch geladen ({len(WEBSITE_TEXT)} Zeichen)")
+    else:
+        WEBSITE_TEXT = (
+            "Liquid Aesthetik ist eine moderne Praxis für ästhetische Medizin in Wiesbaden. "
+            "Wir bieten Behandlungen mit Botox, Hyaluron und Fadenlifting an."
+        )
+        print("⚠️ Keine Website-Datei gefunden – Fallback-Text geladen.")
 except Exception as e:
-    WEBSITE_TEXT = "Fehler beim Laden der statischen Website."
+    WEBSITE_TEXT = (
+        "Liquid Aesthetik ist eine moderne Praxis für ästhetische Medizin in Wiesbaden."
+    )
     print("❌ Website konnte nicht geladen werden:", e)
+
 
 
 # 💰 Preise laden
@@ -146,33 +156,43 @@ class handler(BaseHTTPRequestHandler):
                     reply = "Du findest uns auf Instagram unter @liquid.aesthetik und auf TikTok unter @liquid_aesthetik."
                 self._send(200, {"reply": reply})
                 return
-                        # 📍 Standort & Entfernung erkennen
-            if any(word in normalized_message for word in ["wo", "befindet", "adresse", "anfahrt", "langgasse", "wiesbaden", "standort", "karte", "weg"]):
-                reply = "Liquid Aesthetik befindet sich in der Langgasse 20, 65183 Wiesbaden. Termine sind nach Vereinbarung möglich."
+
+            normalized_message = normalize(user_message)
+
+            # 🧭 Anfahrt / Entfernung → GPT beantworten lassen
+            if any(k in user_message for k in [
+                "wie weit", "wie lange", "entfernt", "fahrzeit", "fahrt",
+                "anfahrt", "route", "weg", "von mir", "nach wiesbaden"
+            ]):
+                prompt = f"""
+                Du bist die Assistentin von Liquid Aesthetik.
+                Adresse der Praxis: Langgasse 20, 65183 Wiesbaden.
+
+                AUFGABE:
+                - Beantworte Anfahrts- oder Entfernungsfragen kurz (1–2 Sätze), freundlich und ehrlich.
+                - Wenn der Nutzer einen Ort nennt (z. B. Mainz, Frankfurt, Rüsselsheim, Darmstadt):
+                * Gib eine grobe, realistische Zeitspanne für das Rhein-Main-Gebiet als Schätzung an
+                    (z. B. Mainz 20–40 Min, Frankfurt 30–50 Min, Rüsselsheim 15–30 Min, Darmstadt 35–55 Min – jeweils „je nach Verkehr“).
+                - Wenn kein Startort genannt wird:
+                * Bitte freundlich in einem einzigen Satz um den Startort.
+                - Nenne immer die Praxisadresse und erwähne kurz, dass Google Maps die genaueste Zeit liefert.
+                -"Gib bei Anfahrtszeiten immer eine grobe Schätzung (z. B. 20–40 Minuten) und sag 'je nach Verkehr'. Erfinde keine exakten Kilometer oder Zeiten."
+
+
+Nutzerfrage: {user_message}
+"""
+                completion = client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.2,
+                    timeout=20,
+                )
+                reply = completion.choices[0].message.content.strip()
                 self._send(200, {"reply": reply})
                 return
-
-                        # 📍 Standort & Entfernung erkennen
-            if any(word in normalized_message for word in ["wo", "befindet", "adresse", "anfahrt", "langgasse", "wiesbaden", "standort", "karte", "weg"]):
-                reply = "Liquid Aesthetik befindet sich in der Langgasse 20, 65183 Wiesbaden. Termine sind nach Vereinbarung möglich."
-                self._send(200, {"reply": reply})
-                return
-
-            # 📍 Dynamische Entfernungserkennung
-            city_match = re.search(r"aus\s+([a-zäöüß]+)", user_message)
-            if city_match:
-                city = city_match.group(1).capitalize()
-                reply = f"Von {city} aus sind es etwa 20–40 Minuten bis zu uns nach Wiesbaden – je nach Verkehr. Unsere Praxis liegt zentral in der Langgasse 20."
-                self._send(200, {"reply": reply})
-                return
-
-            if any(word in normalized_message for word in ["entfernt", "weit", "von mir", "wie lange", "fahrt", "fahrzeit"]):
-                reply = "Das hängt davon ab, von wo du kommst – wir sind in der Langgasse 20 in Wiesbaden, gut erreichbar aus dem gesamten Rhein-Main-Gebiet."
-                self._send(200, {"reply": reply})
-                return
-
-
-
             
             # 📄 Kurzbeschreibung laden
             try:
