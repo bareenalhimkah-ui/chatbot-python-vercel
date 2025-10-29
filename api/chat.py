@@ -4,6 +4,8 @@ from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
 
+MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
+
 # 🔐 .env.local laden (nur wenn vorhanden)
 env_path = os.path.join(os.path.dirname(__file__), "../.env.local")
 if os.path.exists(env_path):
