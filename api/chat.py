@@ -294,10 +294,10 @@ class handler(BaseHTTPRequestHandler):
             if found_key:
                 fragt_nach_preis = any(
                     word in normalized_message
-                    for word in ["preis", "kosten", "teuer", "ab", "wie viel", "anfang"]
+                    for word in ["preis", "kosten", "teuer", "ab", "zahlen", "anfangs", "euro"]
                 )
                 if fragt_nach_preis:
-                    reply = f"Die Preise für {found_key} beginnen {PREISE[found_key]}."
+                    reply = f"Die Preise für {found_key, 'je nach Behandlung'} beginnen {PREISE[]}."
                 elif found_key in BEHANDLUNGEN:
                     reply = BEHANDLUNGEN[found_key]
                 else:
@@ -392,3 +392,159 @@ if __name__ == "__main__":
     server = HTTPServer(("127.0.0.1", port), handler)
     print(f"🚀 Server läuft auf http://127.0.0.1:{port}/api/chat")
     server.serve_forever()
+
+
+
+
+import os
+import requests
+from flask import Flask, request, jsonify
+from api.chat import voice_interaction, client, MODEL, SYSTEM_PROMPT
+
+app = Flask(__name__)
+
+# -------------------------
+# 🔧 WhatsApp Webhook
+# -------------------------
+@app.route("/webhook/whatsapp", methods=["POST"])
+def whatsapp_webhook():
+    data = request.json
+    sender = data.get("from")
+    message = data.get("message", {})
+
+    # 📞 1️⃣ WhatsApp-Anruf erkannt
+    if message.get("type") == "call":
+        print(f"📞 WhatsApp-Anruf von {sender}")
+        # TODO: Verbindung zur Audio-Stream-Session (Realtime Speech) aufbauen
+        # vorerst nur Platzhalterantwort:
+        send_whatsapp_audio(sender, "Willkommen bei Liquid Aesthetik. Wie kann ich helfen?")
+        return jsonify({"status": "call handled"})
+
+    # 🎧 2️⃣ Sprachnachricht erkannt
+    elif message.get("type") == "audio":
+        print(f"🎧 Sprachnachricht von {sender}")
+        audio_url = message["audio"]["url"]
+        filename = "whatsapp_input.wav"
+
+        # Audio herunterladen
+        download_file(audio_url, filename)
+
+        # GPT-Verarbeitung
+        result = voice_interaction(filename)
+        if "audio" in result:
+            send_whatsapp_audio(sender, result["audio"])
+        else:
+            send_whatsapp_text(sender, result.get("reply", "Fehler bei der Verarbeitung."))
+        return jsonify({"status": "audio handled"})
+
+    # 💬 3️⃣ Textnachricht erkannt
+    elif message.get("type") == "text":
+        text = message["text"]["body"]
+        print(f"💬 Text von {sender}: {text}")
+
+        completion = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": text},
+            ],
+            temperature=0.4,
+        )
+        reply = completion.choices[0].message.content.strip()
+        send_whatsapp_text(sender, reply)
+        return jsonify({"status": "text handled"})
+
+    else:
+        return jsonify({"status": "ignored"})
+
+
+# -------------------------
+# 📞 Telefon-Webhooks
+# -------------------------
+@app.route("/webhook/phone", methods=["POST"])
+def phone_call():
+    data = request.json
+    call_type = data.get("event")
+
+    if call_type == "incoming_call":
+        print("📞 Eingehender Telefonanruf erkannt.")
+        # Spracheingabe empfangen (z. B. via SIP-Stream)
+        audio_path = receive_audio_from_voip(data)
+        result = voice_interaction(audio_path)
+        play_audio_to_caller(result["audio"])
+        return jsonify({"status": "call answered"})
+
+    elif call_type == "sms":
+        text = data.get("message")
+        number = data.get("from")
+        print(f"💬 SMS von {number}: {text}")
+
+        completion = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": text},
+            ],
+            temperature=0.4,
+        )
+        reply = completion.choices[0].message.content.strip()
+        send_sms(number, reply)
+        return jsonify({"status": "sms handled"})
+
+    return jsonify({"status": "ignored"})
+
+
+# -------------------------
+# 🔧 Hilfsfunktionen
+# -------------------------
+def download_file(url, filename):
+    r = requests.get(url)
+    with open(filename, "wb") as f:
+        f.write(r.content)
+
+def send_whatsapp_text(to, text):
+    print(f"📤 Sende WhatsApp-Text an {to}: {text}")
+    # → Meta API oder 360Dialog API verwenden
+    # requests.post("https://graph.facebook.com/v19.0/<PHONE_ID>/messages", json={...})
+
+def send_whatsapp_audio(to, audio_path_or_text):
+    print(f"📤 Sende WhatsApp-Audio an {to}")
+    # Wenn nur Text, vorher TTS erzeugen
+    if isinstance(audio_path_or_text, str) and os.path.exists(audio_path_or_text) is False:
+        tts_path = "tts_reply.wav"
+        result = voice_interaction_textonly(audio_path_or_text, tts_path)
+        audio_path_or_text = tts_path
+    # Dann Upload zur WhatsApp API
+
+def send_sms(to, text):
+    print(f"📤 Sende SMS an {to}: {text}")
+    # → z. B. sipgate.io, MessageBird oder Vonage API
+
+def receive_audio_from_voip(data):
+    # Beispiel: Audio speichern von SIP-Stream
+    audio_path = "phone_input.wav"
+    # Hier käme Code für RTP / sipgate.io Download
+    return audio_path
+
+def play_audio_to_caller(audio_path):
+    print(f"🎧 Spiele Audio zurück: {audio_path}")
+    # z. B. sipgate.io API call mit base64 Audio
+
+def voice_interaction_textonly(text, output_path="reply.wav"):
+    """TTS nur für Text (ohne STT)."""
+    try:
+        with open(output_path, "wb") as f:
+            speech = client.audio.speech.create(
+                model="gpt-4o-mini-tts",
+                voice="alloy",
+                input=text,
+            )
+            f.write(speech.audio)
+        return output_path
+    except Exception as e:
+        print("❌ Fehler bei TTS:", e)
+        return None
+
+
+if __name__ == "__main__":
+    app.run(port=8080, debug=True)
