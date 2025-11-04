@@ -1,7 +1,7 @@
 {
-  "praxis": {
-    "name": "Liquid Aesthetik",
-    "standort": "Wiesbaden",
+  "praxen": {
+  "wiesbaden": {
+    "name": "Liquid Aesthetik Wiesbaden",
     "adresse": "Langgasse 20, 65183 Wiesbaden",
     "telefon": "0157 – 880 588 48",
     "email": "info@liquid-aesthetik.de",
@@ -9,6 +9,26 @@
     "beschreibung": "Liquid Aesthetik ist eine Praxis für ästhetische Medizin in Wiesbaden. Wir bieten moderne, minimal-invasive Behandlungen an, die Natürlichkeit und ein frisches Erscheinungsbild in den Mittelpunkt stellen.",
     "slogan": "Für ein natürlich junges Aussehen."
   },
+  "mannheim": {
+    "name": "Liquid Aesthetik Mannheim",
+    "adresse": "Breite Straße 21, 68167 Mannheim",
+    "telefon": "0157 – 880 588 48",
+    "email": "info@liquid-aesthetik.de",
+    "oeffnungszeiten": "Termine nach Vereinbarung",
+    "beschreibung": "Liquid Aesthetik Mannheim bietet ästhetische Behandlungen mit höchsten Standards und einem Fokus auf Natürlichkeit und individuelle Beratung.",
+    "slogan": "Für ein natürlich junges Aussehen."
+  },
+  "dortmund": {
+    "name": "Liquid Aesthetik Dortmund",
+    "adresse": "Markt 6, 44137 Dortmund",
+    "telefon": "0157 – 880 588 48",
+    "email": "info@liquid-aesthetik.de",
+    "oeffnungszeiten": "Termine nach Vereinbarung",
+    "beschreibung": "Liquid Aesthetik Dortmund steht für moderne ästhetische Medizin und persönliche Betreuung in angenehmer Atmosphäre.",
+    "slogan": "Für ein natürlich junges Aussehen."
+  }
+},
+
   "socials": {
     "instagram": "@liquid.aesthetik",
     "tiktok": "@liquid_aesthetik"
