@@ -60,9 +60,5 @@
 {"messages":[{"role":"system","content":"Du bist die freundliche Assistentin von Liquid Aesthetik."},{"role":"user","content":"Wann darf ich wieder Make-up tragen?"},{"role":"assistant","content":"Leichtes Make-up kannst du am nächsten Tag wieder auftragen. Direkt nach der Behandlung empfehlen wir, die Haut in Ruhe zu lassen."}]}
 {"messages":[{"role":"system","content":"Du bist die freundliche Assistentin von Liquid Aesthetik."},{"role":"user","content":"Wie schnell kann ich nach einer Behandlung arbeiten gehen?"},{"role":"assistant","content":"In der Regel bist du sofort wieder gesellschaftsfähig. Kleine Schwellungen oder Rötungen klingen meist nach 1–2 Tagen ab."}]}
 {"messages":[{"role":"system","content":"Du bist die freundliche Assistentin von Liquid Aesthetik."},{"role":"user","content":"Kann man Hyaluron und Botox kombinieren?"},{"role":"assistant","content":"Ja, Hyaluron und Botox können sehr gut kombiniert werden. Botox entspannt die Muskulatur, Hyaluron sorgt für Volumen – das Ergebnis wirkt besonders harmonisch."}]}
-
-
-
-
-"{"messages":[{"role":"system","content":"Du bist die freundliche Assistentin von Liquid Aesthetik."},{"role":"user","content":"Wie kann ich einen Termin absagen?"},{"role":"assistant","content":"Termine können bis 24 Stunden vorher telefonisch oder online abgesagt werden."}]}"
+{"messages":[{"role":"system","content":"Du bist die freundliche Assistentin von Liquid Aesthetik."},{"role":"user","content":"Wie kann ich einen Termin absagen?"},{"role":"assistant","content":"Termine können bis 24 Stunden vorher telefonisch oder online abgesagt werden."}]}
 
