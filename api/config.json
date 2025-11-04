@@ -1,0 +1,42 @@
+{
+  "praxis": {
+    "name": "Liquid Aesthetik",
+    "standort": "Wiesbaden",
+    "adresse": "Langgasse 20, 65183 Wiesbaden",
+    "telefon": "0157 – 880 588 48",
+    "email": "info@liquid-aesthetik.de",
+    "oeffnungszeiten": "Termine nach Vereinbarung",
+    "beschreibung": "Liquid Aesthetik ist eine Praxis für ästhetische Medizin in Wiesbaden. Wir bieten moderne, minimal-invasive Behandlungen an, die Natürlichkeit und ein frisches Erscheinungsbild in den Mittelpunkt stellen.",
+    "slogan": "Für ein natürlich junges Aussehen."
+  },
+  "socials": {
+    "instagram": "@liquid.aesthetik",
+    "tiktok": "@liquid_aesthetik"
+  },
+  "preise": {
+    "Lippen 0,5 ml": "149 €",
+    "Lippen 1 ml": "249 €",
+    "2 ml": "450 €",
+    "3 ml": "650 €",
+    "4 ml": "850 €",
+    "5 ml": "1000 €",
+    "Nasen­korrektur ohne OP": "299 € (1. Behandlung), 99 € (Nachbehandlung nach 4–6 Wochen)",
+    "Augenringe / Tränenrinne": "299 € (1. Behandlung), 99 € (Nachbehandlung)",
+    "Wangen/Kinn 1 ml": "249 €",
+    "Wangen/Kinn 2 ml": "450 €",
+    "Jawline 2 ml": "450 €",
+    "Lipolyse/Fettwegspritze": "199 €",
+    "B. Botox": "ab 149 €",
+    "Fadenlifting COG Fäden 4 (große)": "550 €",
+    "Mono Fäden 10 Stück": "199 €",
+    "Microneedling": "199 €",
+    "BioRePeel": "99 €",
+    "Profhilo": "299 €"
+  },
+  "behandlungen": {
+    "Hyaluron": "Unsere Hyaluronbehandlung dient dem Volumenaufbau und der Faltenreduktion. Sie sorgt für ein frisches, natürliches Aussehen.",
+    "B. Botox": "Botox wird zur Entspannung mimischer Muskeln eingesetzt. Es hilft, feine Linien und Falten zu glätten und beugt neuen Falten vor.",
+    "Lipolyse/Fettwegspritze": "Die Fettwegspritze (Lipolyse) reduziert gezielt kleine Fettdepots – etwa am Doppelkinn oder an den Wangen.",
+    "Fadenlifting": "Beim Fadenlifting werden selbstauflösende Fäden verwendet, um die Haut sanft zu straffen und zu liften."
+  }
+}
