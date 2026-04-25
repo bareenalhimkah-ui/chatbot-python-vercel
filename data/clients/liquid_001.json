@@ -1,0 +1,23 @@
+{
+  "client_id": "liquid_001",
+  "business_name": "Liquid Aesthetik",
+  "industry": "Ästhetische Medizin",
+  "tone": "freundlich, professionell",
+  "contact": {
+    "phone": "0157 88058848",
+    "email": "info@liquid-aesthetik.de"
+  },
+  "locations": {
+    "wiesbaden": {
+      "name": "Wiesbaden"
+    },
+    "mannheim": {
+      "name": "Mannheim"
+    },
+    "dortmund": {
+      "name": "Dortmund"
+    }
+  },
+  "services": [],
+  "faq": []
+}
